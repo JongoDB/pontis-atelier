@@ -142,7 +142,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
                 ))}
               </div>
               <p className="mt-6 text-xs text-clay leading-relaxed">
-                pontis sends your request to claude on the backend, with the full 101-module catalog as context.
+                pontis sends your request to claude on the backend, with the full {ALL_MODULES.length}-module catalog as context.
                 claude reads your intent, picks a slice, and writes back a plan in ĒSO's voice.
                 <span className="text-burnt"> if the backend is unreachable, a built-in rule-based planner takes over
                 so you can keep working.</span>

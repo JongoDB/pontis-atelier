@@ -79,7 +79,7 @@ export const ESO_CONFIG: TenantConfig = {
     body: [
       'pontis · latin · of the bridge. the platform fsc is building to bridge ĒSO\'s day — monograph, hubspot, scattered word templates, voice memos that disappear — into a single, coherent place.',
       'atelier · french · the workshop where ĒSO decides what pontis becomes.',
-      '101 modules to choose from. select what you want, defer what can wait, reorder the build. the cost and gantt redraw as you sketch. nothing\'s committed until you say so.',
+      '109 modules to choose from. select what you want, defer what can wait, reorder the build. the cost and gantt redraw as you sketch. nothing\'s committed until you say so.',
     ],
   },
 

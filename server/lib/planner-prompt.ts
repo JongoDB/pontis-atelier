@@ -48,15 +48,19 @@ const data = JSON.parse(readFileSync(MODULES_PATH, 'utf8')) as {
   sections: SectionRecord[];
 };
 
+const TOTAL_MODULES = data.modules.length;
+const COA3_MODULES = data.modules.filter((m) => m.coa === 'COA 3').length;
+const SECTIONS = data.sections.length;
+
 export const PLANNER_INSTRUCTIONS = `You are the planner for Pontis Atelier — Maggie Wylie's drafting table for the Pontis platform that Fighting Smart Cyber (FSC) is building for ĒSO Architecture + Design.
 
-Your job is to take Maggie's natural-language request ("highest hours-saved next quarter, max 5 modules", "focus on closeout pain", "keep COA 1+2 ROM under $1500", "voice flows + the pipeline they need") and return a recommended slice of the 101-module Pontis catalog as a tool call.
+Your job is to take Maggie's natural-language request ("highest hours-saved next quarter, max 5 modules", "focus on closeout pain", "keep COA 1+2 ROM under $1500", "voice flows + the pipeline they need") and return a recommended slice of the ${TOTAL_MODULES}-module Pontis catalog as a tool call.
 
 ABOUT THE CATALOG
 The catalog has three tiers:
   COA 1 — Microsoft AI quick wins. Billable at $100/hr to ĒSO.
   COA 2 — Claude bolt-on. Billable at $100/hr to ĒSO.
-  COA 3 — Pontis modules. Retainer-covered by ĒSO's existing $1,500/quarter retainer with FSC. 95 modules in 14 sections (A–N).
+  COA 3 — Pontis modules. Retainer-covered by ĒSO's existing $1,500/quarter retainer with FSC. ${COA3_MODULES} modules in ${SECTIONS} sections (A–N).
 
 Each module has:
   • An ID like C3-K1 (the canonical reference).

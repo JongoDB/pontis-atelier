@@ -18,7 +18,7 @@ Built by Fighting Smart Cyber for ĒSO under COA 3 of the May 12, 2026 readout.
 
 ## What it does
 
-- **Browse 101 modules** across 14 Pontis sections (the post-readout T-chart)
+- **Browse 109 modules** across 14 Pontis sections (the post-readout T-chart)
 - **Side-by-side _today vs. with Pontis_** on every card (flip a card to see)
 - **Live cost + savings calculation** — COA 1/2 ROM at $100/hr, COA 3 quarters
   of retainer build, annual hours saved (mid post-adoption), $ saved at

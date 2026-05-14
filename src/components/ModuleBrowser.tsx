@@ -76,7 +76,7 @@ export function ModuleBrowser() {
     <div className="px-6 md:px-10 py-10 md:py-14">
       {/* Section eyebrow + headline */}
       <div className="max-w-[1600px] mx-auto">
-        <p className="eyebrow">browse · 14 sections · 101 modules</p>
+        <p className="eyebrow">browse · {COUNTS.sections} sections · {COUNTS.total} modules</p>
         <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10 items-end">
           <h1 data-tour="browse-headline" className="md:col-span-7 font-display text-display-lg text-midnight">
             what would you like<br />

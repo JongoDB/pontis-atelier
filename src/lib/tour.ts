@@ -5,6 +5,8 @@
 // a ring + caption near it. Steps with no anchor render a centered card
 // (used for intros / outros).
 
+import { COUNTS } from '../data/data';
+
 export type TourId = 'browse' | 'ask';
 
 export interface TourStep {
@@ -27,7 +29,7 @@ export const TOURS: Record<TourId, { name: string; steps: TourStep[] }> = {
       {
         anchor: 'browse-headline',
         title: 'this is the catalog.',
-        body: '101 modules across 14 sections of how ĒSO works today. browse it like a menu — every card pitches one piece of pontis.',
+        body: `${COUNTS.total} modules across ${COUNTS.sections} sections of how ĒSO works today. browse it like a menu — every card pitches one piece of pontis.`,
         side: 'bottom',
       },
       {
@@ -103,7 +105,7 @@ export const TOURS: Record<TourId, { name: string; steps: TourStep[] }> = {
       {
         anchor: 'hey-modal',
         title: 'this is your pontis assistant.',
-        body: 'tell it what you want in plain english. it reads the full 101-module catalog and your current selection, picks a slice, and writes back a starting plan in ĒSO\'s voice.',
+        body: `tell it what you want in plain english. it reads the full ${COUNTS.total}-module catalog and your current selection, picks a slice, and writes back a starting plan in ĒSO's voice.`,
         onEnter: 'open-hey-pontis',
         side: 'bottom',
       },

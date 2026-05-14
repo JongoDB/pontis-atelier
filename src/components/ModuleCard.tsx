@@ -93,7 +93,7 @@ function ModuleCardInner({ module: m, density = 'normal', className, onOpenDeepD
   const [flipped, setFlipped] = useState(false);
   // Focused selectors: this card only re-renders when *its* selection state
   // or *its* priority changes. The previous `useStore((s) => s.selectedOrder)`
-  // re-rendered all 101 cards on every toggle.
+  // re-rendered every card on every toggle.
   const selected = useStore((s) => s.selectedOrder.includes(m.id));
   const priority = useStore((s) => s.priorities[m.id] ?? null);
   // Missing prereqs need the full set, but only when this card is selected.
