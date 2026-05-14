@@ -103,9 +103,9 @@ export function CostPanel({ variant = 'sidebar' }: CostPanelProps) {
           value={compactCurrency(summary.billableROM)}
         />
         <Row
-          label="Pontis modules (COA 3)"
-          sub={`retainer · ≈${summary.retainerQuartersNeeded} quarter${summary.retainerQuartersNeeded === 1 ? '' : 's'} of build`}
-          value={summary.retainerModules.toString()}
+          label={`Pontis modules · ${summary.retainerModules}`}
+          sub={`≈ ${summary.retainerQuartersNeeded} quarter${summary.retainerQuartersNeeded === 1 ? '' : 's'} of build @ ${currency(assumptions.retainerPerQuarter, 0)}/qtr · already paid`}
+          value={compactCurrency(summary.retainerQuartersNeeded * assumptions.retainerPerQuarter)}
         />
         <Row
           label="annual hours saved"

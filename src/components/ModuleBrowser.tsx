@@ -3,8 +3,10 @@ import { Search, Filter, ListFilter, X } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { ALL_MODULES, SECTIONS, MODULES_BY_SECTION, COUNTS } from '../data/data';
 import { ModuleCard } from './ModuleCard';
+import { ModuleDeepDive } from './ModuleDeepDive';
 import { useStore } from '../store';
 import { compactNumber } from '../lib/format';
+import type { PontisModule } from '../types';
 
 const COA_FILTERS = [
   { key: 'all',    label: 'all',         test: () => true },
@@ -27,6 +29,7 @@ export function ModuleBrowser() {
   const [coaFilter, setCoaFilter] = useState<(typeof COA_FILTERS)[number]['key']>('all');
   const [lifecycle, setLifecycle] = useState<typeof LIFECYCLE_OPTIONS[number]>('all');
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const [deepDive, setDeepDive] = useState<PontisModule | null>(null);
   const selectedOrder = useStore((s) => s.selectedOrder);
   const selectedSet = useMemo(() => new Set(selectedOrder), [selectedOrder]);
 
@@ -201,6 +204,7 @@ export function ModuleBrowser() {
                     <ModuleCard
                       key={m.id}
                       module={m}
+                      onOpenDeepDive={setDeepDive}
                       className={cn(
                         idx % 7 === 3 && 'lg:col-span-2'
                       )}
@@ -219,6 +223,8 @@ export function ModuleBrowser() {
           </div>
         )}
       </div>
+
+      <ModuleDeepDive module={deepDive} onClose={() => setDeepDive(null)} />
     </div>
   );
 }

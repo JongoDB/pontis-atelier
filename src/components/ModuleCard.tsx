@@ -83,22 +83,13 @@ interface ModuleCardProps {
   module: PontisModule;
   density?: 'normal' | 'compact';
   className?: string;
+  /** Fire when the user clicks the sparkle/deep-dive icon. */
+  onOpenDeepDive?: (module: PontisModule) => void;
 }
 
 const { byId } = buildDependencyIndex(ALL_MODULES);
 
-const claudeAskLink = (m: PontisModule) => {
-  const prompt = `I'm Maggie at ĒSO Architecture + Design. I'm considering adding "${m.name}" to my Pontis build with Fighting Smart Cyber.
-
-What it does: ${m.description}
-
-What I want out of it: ${m.desiredOutcome}
-
-Help me think about: where does this fit in my workflow today, what would change, and what should I worry about? Be specific to a small residential + commercial A&E firm.`;
-  return `https://claude.ai/new?q=${encodeURIComponent(prompt)}`;
-};
-
-export function ModuleCard({ module: m, density = 'normal', className }: ModuleCardProps) {
+export function ModuleCard({ module: m, density = 'normal', className, onOpenDeepDive }: ModuleCardProps) {
   const [flipped, setFlipped] = useState(false);
   const selectedOrder = useStore((s) => s.selectedOrder);
   const toggle = useStore((s) => s.toggle);
@@ -255,16 +246,15 @@ export function ModuleCard({ module: m, density = 'normal', className }: ModuleC
                 onChange={(p) => setPriority(m.id, p)}
               />
             )}
-            <a
-              href={claudeAskLink(m)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onOpenDeepDive?.(m); }}
               className="p-2 text-burnt hover:text-midnight transition-colors"
-              title="Ask Claude how this would work for ĒSO"
-              aria-label="Ask Claude about this module"
+              title="See this module in depth — business value, dependencies, what changes"
+              aria-label="Open module deep-dive"
             >
               <Sparkles size={14} />
-            </a>
+            </button>
           </footer>
 
           {/* Selected: dependency risk indicator */}

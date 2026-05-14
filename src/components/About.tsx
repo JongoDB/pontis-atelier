@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Compass, ArrowRight } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { EsoMark } from './Wordmark';
+import { COUNTS } from '../data/data';
 
 interface AboutProps {
   open: boolean;
   onClose: () => void;
+}
+
+function restartWalkthrough() {
+  window.dispatchEvent(new CustomEvent('atelier:restart-walkthrough'));
 }
 
 export function About({ open, onClose }: AboutProps) {
@@ -64,7 +69,7 @@ export function About({ open, onClose }: AboutProps) {
           <div className="mt-10 grid grid-cols-3 gap-6 pt-7 border-t border-midnight/10">
             <div>
               <p className="eyebrow mb-2">browse</p>
-              <p className="text-sm text-burnt">101 modules across 14 pontis sections. each one a decision.</p>
+              <p className="text-sm text-burnt">{COUNTS.total} modules across {COUNTS.sections} pontis sections. each one a decision.</p>
             </div>
             <div>
               <p className="eyebrow mb-2">decide</p>
@@ -74,6 +79,21 @@ export function About({ open, onClose }: AboutProps) {
               <p className="eyebrow mb-2">share</p>
               <p className="text-sm text-burnt">export a one-page plan for carli, jerry, the team.</p>
             </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-midnight/10 flex items-center justify-between gap-4">
+            <p className="text-[12px] text-clay italic">
+              first time here, or want to see the entry points again?
+            </p>
+            <button
+              type="button"
+              onClick={() => { onClose(); setTimeout(restartWalkthrough, 60); }}
+              className="flex items-center gap-1.5 text-sm text-midnight hover:underline underline-offset-4 decoration-laser decoration-2"
+            >
+              <Compass size={14} />
+              <span>show me the walkthrough</span>
+              <ArrowRight size={12} />
+            </button>
           </div>
         </div>
       </article>

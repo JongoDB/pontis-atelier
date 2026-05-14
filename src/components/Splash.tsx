@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { Compass, LayoutGrid, GanttChart, Sparkles } from 'lucide-react';
+import { Compass, LayoutGrid, Sparkles } from 'lucide-react';
 import { useStore } from '../store';
+import { COUNTS } from '../data/data';
 import { EsoMark } from './Wordmark';
 
 interface SplashProps {
-  onChoose: (target: 'browse' | 'plan' | 'gantt' | 'ask') => void;
+  onChoose: (target: 'browse' | 'plan' | 'ask') => void;
   onSkip: () => void;
 }
 
@@ -45,7 +46,7 @@ export function Splash({ onChoose, onSkip }: SplashProps) {
                   <span className="font-medium text-midnight">atelier</span> <span className="text-clay">·</span> french <span className="text-clay">·</span> the workshop where ĒSO decides what pontis becomes.
                 </p>
                 <p className="text-midnight pt-2 border-t border-midnight/10">
-                  101 modules to choose from. select what you want, defer what can wait, reorder the build.
+                  {COUNTS.total} modules to choose from. select what you want, defer what can wait, reorder the build.
                   the cost and gantt redraw as you sketch. nothing's committed until you say so.
                 </p>
               </div>
@@ -56,7 +57,7 @@ export function Splash({ onChoose, onSkip }: SplashProps) {
                 <SplashOption
                   icon={<LayoutGrid size={16} />}
                   title="browse the modules"
-                  sub="all 101 · grouped by 14 pontis sections"
+                  sub={`all ${COUNTS.total} · grouped by ${COUNTS.sections} pontis sections`}
                   onClick={() => onChoose('browse')}
                 />
                 <SplashOption
@@ -67,15 +68,9 @@ export function Splash({ onChoose, onSkip }: SplashProps) {
                   accent
                 />
                 <SplashOption
-                  icon={<GanttChart size={16} />}
-                  title="see the gantt"
-                  sub="the timeline of everything if you said yes to it all"
-                  onClick={() => onChoose('gantt')}
-                />
-                <SplashOption
                   icon={<Compass size={16} />}
                   title="open my saved plan"
-                  sub="whatever's already in your tray"
+                  sub="whatever's already in your tray · timeline + cost included"
                   onClick={() => onChoose('plan')}
                 />
               </div>

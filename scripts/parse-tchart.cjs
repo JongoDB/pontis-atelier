@@ -210,6 +210,29 @@ for (const r of masterRows) {
   });
 }
 
+// --- Merge in net-new modules from extra-modules.json --------------------------------
+//
+// Modules added after a re-audit of FSC's pre-readout source materials (Gemini
+// transcripts, findings deck, Phase 2 roadmap, opportunity matrix) but not
+// captured in the canonical T-chart workbook yet. See scripts/extra-modules.json
+// for the citation-backed audit and the gap analysis.
+
+const extrasPath = path.join(__dirname, 'extra-modules.json');
+if (fs.existsSync(extrasPath)) {
+  const extras = JSON.parse(fs.readFileSync(extrasPath, 'utf8'));
+  const existingIds = new Set(modules.map((m) => m.id));
+  let added = 0;
+  for (const m of extras.modules || []) {
+    if (existingIds.has(m.id)) {
+      console.warn(`[extras] id ${m.id} already exists in T-chart; skipping`);
+      continue;
+    }
+    modules.push(m);
+    added += 1;
+  }
+  if (added) console.log(`Merged ${added} extras from scripts/extra-modules.json`);
+}
+
 // --- Roadmap windows ----------------------------------------------------------------
 
 const roadmap = [];

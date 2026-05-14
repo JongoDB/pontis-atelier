@@ -2,17 +2,15 @@ import { useEffect, useState } from 'react';
 import { Chrome, Footer, MobileNav } from './components/Chrome';
 import { ModuleBrowser } from './components/ModuleBrowser';
 import { PlanPage } from './components/PlanSummary';
-import { Gantt } from './components/Gantt';
 import { HeyPontis } from './components/HeyPontis';
 import { About } from './components/About';
 import { Splash } from './components/Splash';
 import { useStore } from './store';
-import { CostPanel } from './components/CostPanel';
 import { SharedPlanBanner } from './components/Share';
 import { AdminPage } from './components/Admin';
 import { track } from './lib/telemetry';
 
-type Page = 'browse' | 'plan' | 'gantt' | 'about';
+type Page = 'browse' | 'plan' | 'about';
 
 export function App() {
   // Pathname-based routing for the admin surface. /admin renders a different
@@ -44,7 +42,7 @@ function AtelierApp() {
     track('page-view', { page });
   }, [page]);
 
-  const handleSplashChoice = (target: 'browse' | 'plan' | 'gantt' | 'ask') => {
+  const handleSplashChoice = (target: 'browse' | 'plan' | 'ask') => {
     dismissWelcome();
     setSplashOpen(false);
     if (target === 'ask') {
@@ -56,12 +54,19 @@ function AtelierApp() {
   };
 
   const handleNavigate = (s: Page) => {
-    setPage(s);
     if (s === 'about') {
       setAboutOpen(true);
-      setPage('browse'); // keep underlying view stable
+      return;
     }
+    setPage(s);
   };
+
+  // Listen for the global "show me around again" event fired from About + Footer
+  useEffect(() => {
+    const onRestart = () => setSplashOpen(true);
+    window.addEventListener('atelier:restart-walkthrough', onRestart);
+    return () => window.removeEventListener('atelier:restart-walkthrough', onRestart);
+  }, []);
 
   return (
     <div className="min-h-full bg-pearl bg-drafting flex flex-col">
@@ -87,7 +92,6 @@ function AtelierApp() {
       <main className="grow">
         {page === 'browse' && <ModuleBrowser />}
         {page === 'plan' && <PlanPage />}
-        {page === 'gantt' && <GanttPage />}
       </main>
 
       <Footer />
@@ -99,31 +103,5 @@ function AtelierApp() {
   );
 }
 
-function GanttPage() {
-  return (
-    <div className="px-6 md:px-10 py-10 md:py-14 max-w-[1600px] mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-        <div className="md:col-span-7">
-          <p className="eyebrow">gantt · the build, drawn</p>
-          <h1 className="font-display text-display-lg text-midnight mt-2">
-            what lands when.<br />
-            <span className="italic font-light text-burnt">drag · defer · sketch.</span>
-          </h1>
-        </div>
-        <div className="md:col-span-5 text-burnt text-[15px] leading-relaxed max-w-md md:justify-self-end">
-          fsc's suggested sequence honors dependencies — voice flows need their pipeline, dashboards need their foundation.
-          drag a row to reorder. click the defer icon to push it to next quarter and watch the gantt redraw.
-        </div>
-      </div>
-
-      <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8">
-          <Gantt />
-        </div>
-        <aside className="lg:col-span-4 border border-midnight/15 rounded-sm bg-pearl">
-          <CostPanel />
-        </aside>
-      </div>
-    </div>
-  );
-}
+// The Gantt now lives inside the Plan page (with the cost panel beside it).
+// No standalone Gantt route — it's the same data, one fewer click.

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { HelpCircle } from 'lucide-react';
 import { Wordmark } from './Wordmark';
 import { cn } from '../lib/cn';
 import { COUNTS, GENERATED_AT } from '../data/data';
 import { TENANT } from '../tenant.config';
 
-export type Section = 'browse' | 'plan' | 'gantt' | 'about';
+export type Section = 'browse' | 'plan' | 'about';
 
 interface ChromeProps {
   active: Section;
@@ -14,9 +15,8 @@ interface ChromeProps {
 }
 
 const NAV: { key: Section; label: string; sub: string }[] = [
-  { key: 'browse',  label: 'modules',      sub: '101' },
+  { key: 'browse',  label: 'modules',      sub: String(COUNTS.total) },
   { key: 'plan',    label: 'my plan',      sub: '·' },
-  { key: 'gantt',   label: 'gantt',        sub: 'live' },
   { key: 'about',   label: 'about',        sub: '·' },
 ];
 
@@ -80,6 +80,15 @@ export function Chrome({ active, onNavigate, selectedCount, onOpenPlanner }: Chr
         </nav>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('atelier:restart-walkthrough'))}
+            className="hidden md:flex items-center justify-center w-9 h-9 rounded-full text-burnt hover:text-midnight hover:bg-bone/50 transition-colors"
+            title="show me the walkthrough again"
+            aria-label="Restart walkthrough"
+          >
+            <HelpCircle size={15} />
+          </button>
           <button
             type="button"
             onClick={onOpenPlanner}
@@ -166,7 +175,17 @@ export function Footer() {
       </div>
       <div className="border-t border-midnight/10">
         <div className="mx-auto max-w-[1600px] px-6 md:px-10 py-5 flex flex-wrap items-center justify-between gap-3 text-xs text-clay">
-          <span>want to bring pontis to another A+E firm you respect?  <a href={`mailto:${TENANT.contactEmail}?subject=Pontis%20Marketplace`} className="text-midnight hover:underline underline-offset-4">tell us about them</a>.</span>
+          <span>
+            want to bring pontis to another A+E firm you respect?  <a href={`mailto:${TENANT.contactEmail}?subject=Pontis%20Marketplace`} className="text-midnight hover:underline underline-offset-4">tell us about them</a>.
+            <span className="text-clay/50 mx-2">·</span>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('atelier:restart-walkthrough'))}
+              className="text-burnt hover:text-midnight underline underline-offset-4 decoration-clay/40"
+            >
+              show me the walkthrough again
+            </button>
+          </span>
           <span className="font-mono tracking-tight">© 2026 FSC</span>
         </div>
       </div>
