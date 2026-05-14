@@ -62,12 +62,17 @@ const config: Config = {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.35' },
         },
+        tourPulse: {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(233, 255, 20, 0.55)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(233, 255, 20, 0)' },
+        },
       },
       animation: {
         riseIn: 'riseIn 600ms cubic-bezier(0.16, 1, 0.3, 1) both',
         fade: 'fade 500ms ease-out both',
         sweep: 'sweep 800ms cubic-bezier(0.16, 1, 0.3, 1) both',
         pulseDot: 'pulseDot 1.6s ease-in-out infinite',
+        tourPulse: 'tourPulse 1.8s ease-in-out infinite',
       },
     },
   },

@@ -63,11 +63,16 @@ export function Chrome({ active, onNavigate, selectedCount, onOpenPlanner }: Chr
           {NAV.map((item) => {
             const isActive = item.key === active;
             const cnt = item.key === 'plan' ? selectedCount.toString() : item.sub;
+            const tourAnchor =
+              item.key === 'plan' ? 'nav-plan' :
+              item.key === 'fsc' ? 'nav-fsc' :
+              undefined;
             return (
               <button
                 key={item.key}
                 onClick={() => onNavigate(item.key)}
                 aria-current={isActive ? 'page' : undefined}
+                data-tour={tourAnchor}
                 className={cn(
                   'group relative px-4 py-2 text-sm font-medium tracking-tight transition-colors',
                   isActive ? 'text-midnight' : 'text-burnt hover:text-midnight'

@@ -78,7 +78,7 @@ export function ModuleBrowser() {
       <div className="max-w-[1600px] mx-auto">
         <p className="eyebrow">browse · 14 sections · 101 modules</p>
         <div className="mt-3 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10 items-end">
-          <h1 className="md:col-span-7 font-display text-display-lg text-midnight">
+          <h1 data-tour="browse-headline" className="md:col-span-7 font-display text-display-lg text-midnight">
             what would you like<br />
             <span className="italic font-light text-burnt">pontis to bridge</span> first?
           </h1>
@@ -94,7 +94,7 @@ export function ModuleBrowser() {
           aria-label="Filter modules"
           className="mt-10 flex flex-col md:flex-row md:items-center md:flex-wrap gap-3 md:gap-4 pb-4 border-b border-midnight/15"
         >
-          <div className="flex items-center gap-2 grow md:max-w-md min-w-0">
+          <div data-tour="search-input" className="flex items-center gap-2 grow md:max-w-md min-w-0">
             <Search size={15} className="text-burnt shrink-0" aria-hidden="true" />
             <input
               type="search"
@@ -115,7 +115,7 @@ export function ModuleBrowser() {
             )}
           </div>
           <div className="hairline-v hidden md:block" />
-          <div role="group" aria-label="Filter by COA tier" className="flex items-center gap-1 flex-wrap">
+          <div role="group" aria-label="Filter by COA tier" data-tour="coa-filter" className="flex items-center gap-1 flex-wrap">
             {COA_FILTERS.map((f) => {
               const isActive = coaFilter === f.key;
               return (
@@ -137,7 +137,7 @@ export function ModuleBrowser() {
             })}
           </div>
           <div className="hairline-v hidden md:block" />
-          <div className="flex items-center gap-2">
+          <div data-tour="lifecycle-filter" className="flex items-center gap-2">
             <ListFilter size={13} className="text-burnt shrink-0" aria-hidden="true" />
             <label className="sr-only" htmlFor="lifecycle-filter">Filter by lifecycle phase</label>
             <select
@@ -272,7 +272,7 @@ export function ModuleBrowser() {
             custom module request. Sits below all sections so it doesn't crowd
             the catalog but is always reachable. */}
         {totalVisible > 0 && (
-          <section className="mt-16 pt-10 border-t border-midnight/10">
+          <section data-tour="request-cta" className="mt-16 pt-10 border-t border-midnight/10">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
               <div className="md:col-span-8">
                 <p className="eyebrow !text-burnt">don't see what you need?</p>

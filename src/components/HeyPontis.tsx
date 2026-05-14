@@ -82,7 +82,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
         tabIndex={-1}
         className="absolute inset-0 bg-midnight/40 backdrop-blur-sm animate-fade"
       />
-      <div className="relative w-full max-w-2xl max-h-[88vh] flex flex-col bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn overflow-hidden">
+      <div data-tour="hey-modal" className="relative w-full max-w-2xl max-h-[88vh] flex flex-col bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn overflow-hidden">
         <header className="flex items-center justify-between gap-3 px-6 pt-5 pb-3 border-b border-midnight/10">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-laser animate-pulseDot" aria-hidden="true" />
@@ -102,7 +102,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
           onSubmit={(e) => { e.preventDefault(); submit(prompt); }}
           className="px-6 pt-7 pb-5"
         >
-          <div className="flex items-center gap-2 pb-3 border-b-2 border-midnight">
+          <div data-tour="hey-input" className="flex items-center gap-2 pb-3 border-b-2 border-midnight">
             <Sparkles size={16} aria-hidden="true" className={cn('shrink-0', busy ? 'text-midnight animate-pulse' : 'text-burnt')} />
             <label htmlFor="heypontis-prompt" className="sr-only">Describe a plan for Pontis to draft</label>
             <input
@@ -117,6 +117,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
             />
             <button
               type="submit"
+              data-tour="hey-submit"
               className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full bg-midnight text-pearl hover:bg-ink transition-colors disabled:opacity-30"
               disabled={!prompt.trim() || busy}
               aria-label="Submit prompt"
@@ -126,7 +127,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
           </div>
 
           {!result && (
-            <div className="mt-5">
+            <div className="mt-5" data-tour="hey-starters">
               <p className="text-xs text-clay mb-3">try:</p>
               <div className="flex flex-wrap gap-2">
                 {STARTERS.map((s) => (

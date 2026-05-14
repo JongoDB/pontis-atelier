@@ -134,6 +134,7 @@ function ModuleCardInner({ module: m, density = 'normal', className, onOpenDeepD
 
   return (
     <div
+      data-tour="module-card"
       className={cn(
         'card-flip group relative',
         className
@@ -212,7 +213,7 @@ function ModuleCardInner({ module: m, density = 'normal', className, onOpenDeepD
           </div>
 
           {/* Stats strip */}
-          <dl className="px-5 mt-4 grid grid-cols-3 gap-2 text-[11px] border-t border-midnight/10 pt-3">
+          <dl data-tour="card-stats" className="px-5 mt-4 grid grid-cols-3 gap-2 text-[11px] border-t border-midnight/10 pt-3">
             <div>
               <dt className="eyebrow !text-clay/70 !text-[0.625rem]">time</dt>
               <dd className="text-midnight font-medium mt-0.5 tabular-nums">
@@ -240,6 +241,7 @@ function ModuleCardInner({ module: m, density = 'normal', className, onOpenDeepD
               onClick={handleSelect}
               aria-pressed={selected}
               aria-label={selected ? `Remove ${m.name} from plan` : `Add ${m.name} to plan`}
+              data-tour="add-to-plan-btn"
               className={cn(
                 'flex-1 flex items-center justify-center gap-1.5 py-2 text-sm tracking-tight transition-colors rounded-sm min-h-[40px]',
                 selected
@@ -259,6 +261,7 @@ function ModuleCardInner({ module: m, density = 'normal', className, onOpenDeepD
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onOpenDeepDive?.(m); }}
+              data-tour="deep-dive-btn"
               className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-burnt hover:text-midnight transition-colors"
               title="See this module in depth — business value, dependencies, what changes"
               aria-label={`Open deep-dive for ${m.name}`}

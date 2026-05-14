@@ -27,8 +27,12 @@ const AdminPage = lazy(() =>
 const FscRecommended = lazy(() =>
   import('./components/FscRecommended').then((m) => ({ default: m.FscRecommended }))
 );
+const Tour = lazy(() =>
+  import('./components/Tour').then((m) => ({ default: m.Tour }))
+);
 
 type Page = 'browse' | 'fsc' | 'plan' | 'about';
+type TourId = 'browse' | 'ask';
 
 export function App() {
   // Pathname-based routing for the admin surface. /admin renders a different
@@ -57,6 +61,7 @@ function AtelierApp() {
   const [askOpen, setAskOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [splashOpen, setSplashOpen] = useState(!hasOpenedBefore);
+  const [tourId, setTourId] = useState<TourId | null>(null);
 
   useEffect(() => {
     // Page transition: scroll to top
@@ -64,14 +69,15 @@ function AtelierApp() {
     track('page-view', { page });
   }, [page]);
 
-  const handleSplashChoice = (target: 'browse' | 'plan' | 'ask') => {
+  const handleSplashChoice = (target: 'browse' | 'ask') => {
     dismissWelcome();
     setSplashOpen(false);
+    setPage('browse');
     if (target === 'ask') {
-      setPage('browse');
       setAskOpen(true);
+      setTourId('ask');
     } else {
-      setPage(target);
+      setTourId('browse');
     }
   };
 
@@ -144,6 +150,16 @@ function AtelierApp() {
       <Suspense fallback={null}>
         <HeyPontis open={askOpen} onClose={() => setAskOpen(false)} />
         <About open={aboutOpen} onClose={() => setAboutOpen(false)} />
+        {tourId && (
+          <Tour
+            id={tourId}
+            onClose={() => setTourId(null)}
+            onSideEffect={(eff) => {
+              if (eff === 'open-hey-pontis') setAskOpen(true);
+              if (eff === 'close-hey-pontis') setAskOpen(false);
+            }}
+          />
+        )}
       </Suspense>
     </div>
   );

@@ -1,11 +1,10 @@
-import { Compass, LayoutGrid, Sparkles } from 'lucide-react';
-import { useStore } from '../store';
+import { LayoutGrid, Sparkles } from 'lucide-react';
 import { COUNTS } from '../data/data';
 import { EsoMark } from './Wordmark';
 import { useModal } from '../lib/useModal';
 
 interface SplashProps {
-  onChoose: (target: 'browse' | 'plan' | 'ask') => void;
+  onChoose: (target: 'browse' | 'ask') => void;
   onSkip: () => void;
 }
 
@@ -64,21 +63,15 @@ export function Splash({ onChoose, onSkip }: SplashProps) {
                 <SplashOption
                   icon={<LayoutGrid size={16} />}
                   title="browse the modules"
-                  sub={`all ${COUNTS.total} · grouped by ${COUNTS.sections} pontis sections`}
+                  sub={`all ${COUNTS.total} · grouped by ${COUNTS.sections} pontis sections · walkthrough included`}
                   onClick={() => onChoose('browse')}
                 />
                 <SplashOption
                   icon={<Sparkles size={16} />}
-                  title="ask hey pontis"
-                  sub="describe what you want · we'll suggest a starting plan"
+                  title="ask your pontis assistant"
+                  sub="describe what you want · we'll suggest a starting plan · walkthrough included"
                   onClick={() => onChoose('ask')}
                   accent
-                />
-                <SplashOption
-                  icon={<Compass size={16} />}
-                  title="open my saved plan"
-                  sub="whatever's already in your tray · timeline + cost included"
-                  onClick={() => onChoose('plan')}
                 />
               </div>
             </div>
