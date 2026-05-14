@@ -5,6 +5,11 @@
 // running `npm run build`, then `npm start`. No external services required:
 // SQLite holds the snapshots, Claude Code OAuth handles the planner auth.
 
+// Load .env at process boot regardless of how we're launched (systemd
+// EnvironmentFile, bare `npm start`, tmux/screen, etc.). This is a no-op if
+// .env doesn't exist or is empty.
+import 'dotenv/config';
+
 import express, { type NextFunction, type Request, type Response } from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
