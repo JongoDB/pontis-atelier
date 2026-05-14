@@ -69,6 +69,17 @@ export async function planRoute(req: Request, res: Response) {
       ],
     });
 
+    // Handle refusal explicitly — Claude can decline for safety reasons. The
+    // frontend treats anything non-200 as "fall back to local rules," but we
+    // surface the reason so debugging is possible from the response body.
+    if (message.stop_reason === 'refusal') {
+      return res.status(422).json({
+        ok: false,
+        error: 'claude declined to plan this request',
+        stopReason: 'refusal',
+      });
+    }
+
     const toolUse = message.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'submit_plan'
     );

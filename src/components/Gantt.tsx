@@ -4,10 +4,8 @@ import { cn } from '../lib/cn';
 import { ALL_MODULES, SECTION_BY_KEY } from '../data/data';
 import { useStore } from '../store';
 import { buildDependencyIndex } from '../lib/dependencies';
-import { buildSchedule, totalSpanWeeks, quarterLabel, type ScheduledModule } from '../lib/schedule';
+import { buildSchedule, totalSpanWeeks, quarterLabel, QUARTER_DIVIDERS, type ScheduledModule } from '../lib/schedule';
 import { track } from '../lib/telemetry';
-
-const PHASE_DIVIDERS = [4, 10, 16, 26, 39, 52]; // week boundaries
 
 export function Gantt() {
   const selectedOrder = useStore((s) => s.selectedOrder);
@@ -53,6 +51,7 @@ export function Gantt() {
   }
 
   const deferredCount = items.filter((i) => i.isDeferred).length;
+  const quartersOfWork = Math.max(1, Math.ceil(spanWeeks / 13));
 
   return (
     <div className="bg-pearl border border-midnight/15 rounded-sm">
@@ -61,7 +60,7 @@ export function Gantt() {
         <div>
           <p className="eyebrow">live gantt · drag to reorder · hover for defer slider</p>
           <h2 className="font-display text-xl text-midnight mt-1 lowercase">
-            ≈ {spanWeeks} weeks of work
+            ≈ {quartersOfWork} quarter{quartersOfWork === 1 ? '' : 's'} <span className="text-clay">·</span> {spanWeeks} weeks
             <span className="text-burnt text-base font-light italic"> · {items.length} modules · {deferredCount} deferred</span>
           </h2>
         </div>
@@ -108,26 +107,23 @@ export function Gantt() {
 }
 
 function TimeAxis({ spanWeeks }: { spanWeeks: number }) {
-  // Filter out phase dividers that land within 8% of the right edge so the
-  // "week N" label has its own breathing room.
-  const dividerWeeks = PHASE_DIVIDERS.filter(
+  // Mark the start of each quarter on the axis. Drop any divider within ~8%
+  // of the right edge so the "week N" tail-label has its own breathing room.
+  const dividers = QUARTER_DIVIDERS.filter(
     (w) => w < spanWeeks && w / spanWeeks < 0.92
   );
   return (
     <div className="px-2 md:px-4 py-3 border-b border-midnight/10 overflow-x-auto thin-scroll">
       <div className="relative h-7" style={{ minWidth: `${Math.max(800, spanWeeks * 28)}px` }}>
-        {dividerWeeks.map((w) => {
-          const left = `calc(${(w / spanWeeks) * 100}% - 1px)`;
-          return (
-            <div key={w} className="absolute top-0 h-full" style={{ left }}>
-              <span className="absolute top-0 -translate-x-1/2 eyebrow !text-clay !text-[0.55rem] whitespace-nowrap">
-                {quarterLabel(w)}
-              </span>
-            </div>
-          );
-        })}
+        {dividers.map((w) => (
+          <div key={w} className="absolute top-0 h-full" style={{ left: `calc(${(w / spanWeeks) * 100}% - 1px)` }}>
+            <span className="absolute top-0 -translate-x-1/2 eyebrow !text-clay !text-[0.55rem] whitespace-nowrap">
+              {quarterLabel(w)}
+            </span>
+          </div>
+        ))}
         <div className="absolute right-0 top-0 eyebrow !text-clay !text-[0.55rem]">week {spanWeeks}</div>
-        <div className="absolute left-0 top-0 eyebrow !text-clay !text-[0.55rem]">today</div>
+        <div className="absolute left-0 top-0 eyebrow !text-clay !text-[0.55rem]">q1 · today</div>
       </div>
     </div>
   );

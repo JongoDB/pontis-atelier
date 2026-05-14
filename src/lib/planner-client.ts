@@ -47,18 +47,15 @@ export async function runPlanner(input: {
       body: JSON.stringify({ prompt: input.prompt }),
     });
 
-    // 404 = no api route (local Vite dev without `vercel dev`) — silent fall-back
-    // 503 = backend present but unconfigured — silent fall-back
-    // 502 = model returned malformed plan — fall back
+    // 404 = no api route mounted (e.g. plain Vite dev without the API server)
+    // 503 = backend present but no Claude token configured
+    // 422 = Claude declined for safety
+    // 502 = model returned a malformed plan
     // 2xx = server replied; use its plan
-    // 4xx (400/401) — server rejected the prompt explicitly; show fallback but
-    //   keep the user moving so they can keep iterating.
-    if (res.status === 404 || res.status === 503) {
-      return runRulesFallback(input);
-    }
-
+    // 4xx (400/401) = server rejected the prompt explicitly
+    // All non-2xx responses fall back to the local rule-based planner so the
+    // UI keeps moving. The rules path is open source and always available.
     if (!res.ok) {
-      // Try to parse error, but proceed with fallback either way
       return runRulesFallback(input);
     }
 

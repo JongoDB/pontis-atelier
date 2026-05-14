@@ -402,24 +402,23 @@ function TimelineStep({
   totalWeeks: number;
   schedule: ReturnType<typeof buildSchedule>;
 }) {
-  // Bucket the schedule into roadmap phases the same way the roadmap section does.
+  // Bucket the schedule into quarters. 13-week quarters match the
+  // quarterly-objectives commercial structure agreed with ĒSO.
   const buckets = useMemo(() => {
-    const phaseFor = (week: number) => {
-      if (week < 4) return 'weeks 1–4 · foundation';
-      if (week < 10) return 'weeks 5–10 · first mvp + bd';
-      if (week < 16) return 'weeks 11–16 · project + portal + comms';
-      if (week < 26) return 'months 4–5 · cutover';
-      if (week < 39) return 'quarter 3+ · compound';
-      return 'quarter 4+ · marketplace';
+    const quarterFor = (week: number) => {
+      const q = Math.floor(week / 13) + 1;
+      const start = (q - 1) * 13 + 1;
+      const end = q * 13;
+      return `q${q} · weeks ${start}–${end}`;
     };
     const map = new Map<string, typeof schedule>();
     for (const item of schedule) {
-      const k = phaseFor(item.startWeek);
+      const k = quarterFor(item.startWeek);
       const arr = map.get(k) ?? [];
       arr.push(item);
       map.set(k, arr);
     }
-    return Array.from(map.entries());
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [schedule]);
 
   const quartersOfWork = Math.max(1, Math.ceil(totalWeeks / 13));

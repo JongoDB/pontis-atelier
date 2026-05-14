@@ -256,26 +256,30 @@ function RoadmapAlignment({ selectedSet }: { selectedSet: Set<string> }) {
     <section className="mt-8 border border-midnight/15 rounded-sm bg-pearl p-6">
       <p className="eyebrow">roadmap alignment · fsc's suggested cadence</p>
       <h3 className="font-display text-lg text-midnight mt-1 mb-1 lowercase">
-        what each phase delivers — if you keep the suggested order
+        what each window delivers — if you keep the suggested order
       </h3>
       <p className="text-[11px] text-clay mb-4 italic">
-        percentages reflect coverage of fsc's original sequence for each phase. they don't
+        percentages reflect coverage of fsc's original sequence for each window. they don't
         account for your reorders or deferrals — those land where the gantt shows.
       </p>
       <div className="space-y-3">
         {ROADMAP.map((r, i) => {
           const inPlan = r.modules.filter((id) => selectedSet.has(id));
           const inPlanPct = r.modules.length > 0 ? Math.round((inPlan.length / r.modules.length) * 100) : 0;
+          // The source data tags windows with FSC's internal "Phase 1 — …" code.
+          // We strip that prefix and surface only the descriptive name so Maggie
+          // sees what the window is, not how FSC's internal sequencing groups it.
+          const windowName = r.phase.replace(/^phase \d+ — /i, '').replace(/^cutover decision$/i, 'cutover decision');
           return (
             <div key={i} className="grid grid-cols-12 gap-4 py-2 border-b border-midnight/8 last:border-b-0">
               <div className="col-span-3 md:col-span-3">
                 <p className="text-[11px] uppercase tracking-widish text-clay">{r.window}</p>
-                <p className="text-sm text-midnight font-medium mt-0.5 lowercase">{r.phase.replace(/^phase \d+ — /, '')}</p>
+                <p className="text-sm text-midnight font-medium mt-0.5 lowercase">{windowName}</p>
               </div>
               <div className="col-span-6 md:col-span-7">
                 <p className="text-[13px] text-burnt leading-relaxed clamp-2">{r.outcome}</p>
                 <p className="text-[10px] text-clay mt-1 tabular-nums">
-                  {inPlan.length}/{r.modules.length} of this phase in your plan
+                  {inPlan.length}/{r.modules.length} of this window in your plan
                 </p>
               </div>
               <div className="col-span-3 md:col-span-2 flex flex-col items-end justify-center">

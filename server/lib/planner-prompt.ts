@@ -97,30 +97,71 @@ HOW TO PLAN
    • acknowledge prerequisites you pulled in
    • close with a soft reminder that this is just a suggestion
 
-5. Tag the matched intents. Short uppercase-fragment tags like "FOCUS: CLOSEOUT", "SCOPE: THIS QUARTER", "TONE: COST-FIRST", "SECTIONS: B+C". 1–4 tags.
+5. Tag the matched intents. Short lowercase-fragment tags. Use these exact prefixes so the UI groups them consistently with the rule-based fallback planner: "focus: <pain>", "sections: <letters>", "tone: <value|cost|speed>", "scope: <quarter|month|sprint>", "cap: <amount or count>". 1–4 tags.
 
 WHAT TO ACTUALLY DO
 Call the submit_plan tool. That's the only output. Don't include extra prose outside the tool call. Adaptive thinking is on — use it to reason through the trade-offs internally.
 
-If Maggie's prompt is too vague to give a real recommendation, call submit_plan anyway with a sensible default (5 highest-value modules with their prerequisites) and a rationale that gently asks her to name a pain or a cap.`;
+If Maggie's prompt is too vague to give a real recommendation, call submit_plan anyway with a sensible default (5 highest-value modules with their prerequisites) and a rationale that gently asks her to name a pain or a cap.
+
+WORKED EXAMPLES (study the shape, not the literal IDs — the catalog below is the source of truth)
+
+Example 1 — Pain anchor + cap
+Prompt: "focus on closeout pain first, then BD"
+Reasoning: "closeout" seeds C3-C7 (closeout tear-line), C3-K3 (voice flow B), C3-D8 (thank-you+referral email), C3-L3 (closeout pdf), C3-L6 (project archive). "then BD" pulls in C3-B1 (lead tracker), maybe C3-B2 (referral network). C3-K3 needs C3-K1 (voice pipeline foundation). C3-K1 itself needs nothing else.
+Picks (build order): ["C3-K1", "C3-C7", "C3-K3", "C3-D8", "C3-L3", "C3-L6", "C3-B1", "C3-B2"]
+Rationale: "here's the closeout-first slice — closeout tear-line · voice flow b · thank-you-and-referral email · closeout pdf · project archive. then a quick bd pair: lead tracker · referral network. i pulled in the voice pipeline foundation (c3-k1) so flow b can ship. nothing's added yet — edit before you commit."
+Intents: ["focus: closeout", "focus: bd", "sections: B+C+K+L"]
+
+Example 2 — Cap on billable ROM
+Prompt: "keep COA 1+2 ROM under $400"
+Reasoning: "COA 1+2" + "ROM" + "under $400" means quick-wins only, total billable ≤ $400. Walk billable items cheapest-first: C1-1 ($0), C2-1 ($50), C1-2 ($100), C2-2 ($200) = $350. C2-3 ($300) and C2-4 ($200) would bust the cap.
+Picks: ["C1-1", "C2-1", "C1-2", "C2-2"]
+Rationale: "a cost-conscious slice — 4 quick wins totaling $350, under your $400 cap: confirm m365 copilot cancellation · claude cowork rollout · teams + planner reintegration · 'how to use claude' training session #1. nothing's added yet."
+Intents: ["tone: cost-first", "cap: $400", "scope: quick-wins-only"]
+
+Example 3 — Hours-saved priority with module cap
+Prompt: "highest hours-saved next quarter, max 5 modules"
+Reasoning: "highest hours-saved" sorts by hrs/yr desc. "max 5 modules" caps core picks at 5. "next quarter" means weeksHigh ≤ 13. Top hours-saved modules deliverable in ≤ 13 weeks include C3-C4 (130 hrs, delegation), C3-C7 (113 hrs), C3-D7 (103 hrs, needs C3-K1), C3-A2 (96 hrs, needs C3-A1), C3-B1 (90 hrs). Pull in K1 and A1 as prereqs.
+Picks: ["C3-A1", "C3-K1", "C3-C4", "C3-C7", "C3-A2", "C3-D7", "C3-B1"]
+Rationale: "here's the highest-value slice deliverable this quarter — 5 core: project task visibility + delegation tracking · closeout tear-line · pontis dashboard · voice flow d (program brief) · pontis lead tracker. i pulled in pontis platform foundation (c3-a1) + voice pipeline foundation (c3-k1) so nothing's hanging. roughly 532 hours saved per year at ≥70% adoption."
+Intents: ["tone: value-first", "scope: this-quarter", "cap: 5 modules"]
+
+Use those shapes. Build-order picks (prereqs first), short conversational rationale acknowledging prereqs you pulled in, intents tagged with the prefixes above.`;
 
 function renderCatalog(): string {
   const lines: string[] = [];
-  lines.push('PONTIS SECTIONS (id → name):');
+
+  lines.push('PONTIS SECTIONS:');
   for (const s of data.sections) {
-    lines.push(`  ${s.key} — ${s.name}  (${s.descriptor})`);
+    lines.push(`  §${s.key} — ${s.name}  (${s.descriptor})`);
   }
   lines.push('');
-  lines.push(`MODULE CATALOG (${data.modules.length} modules). Format: ID | name | COA | section | time | cost | hrs-saved/yr | dependencies | desired-outcome`);
+
+  lines.push(`MODULE CATALOG (${data.modules.length} modules)`);
   lines.push('');
+  lines.push('Each module is rendered as a multi-line block. Keys after the ID line are key: value pairs.');
+  lines.push('"deps" is the dependency list. "phase" is the lifecycle phase (Inquiry/Proposal/Design/CA/Closeout/Cross-cutting).');
+  lines.push('"saves" is the estimated annual hours saved post-adoption (—  if not quantified).');
+  lines.push('');
+
   for (const m of data.modules) {
     const cost = m.retainerCovered ? 'retainer' : `$${m.rom}`;
     const hrs = m.hoursSavedPerYear != null ? `${m.hoursSavedPerYear} hrs/yr` : '—';
-    const deps = m.dependencies.length ? m.dependencies.join('+') : '—';
+    const deps = m.dependencies.length ? m.dependencies.join(', ') : '—';
     const time = m.timeLabel.replace(/\s+/g, ' ').trim();
-    const outcome = (m.desiredOutcome || '').slice(0, 160);
-    lines.push(`${m.id} | ${m.name} | ${m.coa} | §${m.sectionKey} | ${time} | ${cost} | ${hrs} | deps:${deps} | ${outcome}`);
+    // Strip "1. ", "2. " etc. prefix from lifecycle phase for readability
+    const phase = (m.lifecyclePhase || 'Cross-cutting').replace(/^\d+\.\s+/, '');
+
+    lines.push(`${m.id}  ·  ${m.name}`);
+    lines.push(`  coa:    ${m.coa}     section: §${m.sectionKey}     time: ${time}     cost: ${cost}     saves: ${hrs}     phase: ${phase}`);
+    if (deps !== '—') lines.push(`  deps:   ${deps}`);
+    if (m.description) lines.push(`  what:   ${m.description}`);
+    if (m.currentTool) lines.push(`  today:  ${m.currentTool}`);
+    if (m.desiredOutcome) lines.push(`  voice:  "${m.desiredOutcome}"`);
+    lines.push('');
   }
+
   return lines.join('\n');
 }
 

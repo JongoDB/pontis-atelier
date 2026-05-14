@@ -83,12 +83,15 @@ export function totalSpanWeeks(items: ScheduledModule[]): number {
   return items.reduce((max, i) => Math.max(max, i.endWeek), 0);
 }
 
-// Group weeks into rough quarters for the time axis
+// Convert a week offset to a quarter label. 13-week quarters align with the
+// quarterly-objectives commercial structure Maggie + Carli + FSC agreed to on
+// May 4 / ratified at the May 12 readout. This is the canonical pacing unit
+// for the COA 3 build; everything else (sub-phase windows, weekly Gantt
+// columns) hangs off it.
 export function quarterLabel(week: number): string {
-  if (week < 4) return 'phase 1';
-  if (week < 10) return 'phase 2';
-  if (week < 16) return 'phase 3';
-  if (week < 26) return 'phase 4';
-  if (week < 39) return 'q3';
-  return 'q4+';
+  const q = Math.floor(week / 13) + 1;
+  return `q${q}`;
 }
+
+// Quarter dividers in weeks (for drawing vertical gridlines on the time axis)
+export const QUARTER_DIVIDERS = [13, 26, 39, 52, 65, 78, 91];
