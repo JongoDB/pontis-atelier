@@ -179,7 +179,7 @@ The Finalize flow ends with two paths to tell FSC:
 
 1. **Email button** (always available, requires Maggie to hit send).
    Renders a `mailto:` link with the full plan summary prefilled in the body.
-   Recipient defaults to `team@fightingsmartycber.com`. Override with the
+   Recipient defaults to `team@fightingsmartcyber.com`. Override with the
    `VITE_FINALIZE_NOTIFY_EMAIL` env var.
 
 2. **Atelier backend** (`/api/finalize`, default).

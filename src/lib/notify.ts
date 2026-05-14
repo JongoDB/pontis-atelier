@@ -23,7 +23,7 @@ const WEBHOOK_URL: string | undefined =
 
 const FSC_NOTIFY_EMAIL: string =
   (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_FINALIZE_NOTIFY_EMAIL) ||
-  'team@fightingsmartycber.com';
+  'team@fightingsmartcyber.com';
 
 // Same-origin backend endpoint. Always tried; gracefully handles 404s.
 const ATELIER_ENDPOINT = '/api/finalize';

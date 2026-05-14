@@ -61,7 +61,7 @@ export interface TenantConfig {
 export const ESO_CONFIG: TenantConfig = {
   firm: 'ĒSO Architecture + Design',
   tagline: 'where pontis takes shape',
-  contactEmail: 'team@fightingsmartycber.com',
+  contactEmail: 'team@fightingsmartcyber.com',
   website: 'https://eso-arch.com',
 
   palette: {
@@ -94,7 +94,7 @@ export const ESO_CONFIG: TenantConfig = {
 
   footer: {
     humanLabel: 'a real human',
-    humanValue: 'team@fightingsmartycber.com',
+    humanValue: 'team@fightingsmartcyber.com',
     builtByLabel: 'built by',
     builtByName: 'fighting smart cyber',
     builtByFor: 'for ĒSO Architecture + Design',
