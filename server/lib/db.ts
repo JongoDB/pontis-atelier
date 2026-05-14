@@ -53,6 +53,19 @@ export async function ensureSchema() {
     );
     CREATE INDEX IF NOT EXISTS snapshots_finalized_at_idx ON snapshots (finalized_at DESC);
     CREATE INDEX IF NOT EXISTS snapshots_finalized_by_idx ON snapshots (finalized_by);
+
+    -- Single-workspace draft (the in-progress plan, before finalize).
+    -- One row in this table = the canonical ĒSO draft. Last write wins.
+    -- Version increments on every PUT so the client can detect "someone else
+    -- edited after my last load" and offer a refresh banner.
+    CREATE TABLE IF NOT EXISTS workspace_draft (
+      workspace_id  TEXT PRIMARY KEY,
+      version       INTEGER NOT NULL DEFAULT 0,
+      updated_at    INTEGER NOT NULL,
+      updated_by    TEXT NOT NULL DEFAULT '',
+      ua            TEXT NOT NULL DEFAULT '',
+      state         TEXT NOT NULL
+    );
   `);
 }
 

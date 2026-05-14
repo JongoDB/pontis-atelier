@@ -9,6 +9,7 @@ import { useStore } from './store';
 import { SharedPlanBanner } from './components/Share';
 import { AdminPage } from './components/Admin';
 import { track } from './lib/telemetry';
+import { draftSync } from './lib/sync';
 
 type Page = 'browse' | 'plan' | 'about';
 
@@ -66,6 +67,17 @@ function AtelierApp() {
     const onRestart = () => setSplashOpen(true);
     window.addEventListener('atelier:restart-walkthrough', onRestart);
     return () => window.removeEventListener('atelier:restart-walkthrough', onRestart);
+  }, []);
+
+  // Boot draft sync — pulls the current canonical draft from the server, then
+  // keeps the store in sync with debounced PUTs. Falls back to localStorage-only
+  // if the backend is unreachable.
+  useEffect(() => {
+    draftSync.boot();
+    // Best-effort flush right before tab close
+    const onUnload = () => { void draftSync.flush(); };
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
   }, []);
 
   return (

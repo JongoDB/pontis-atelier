@@ -14,6 +14,7 @@ import { finalizeRoute } from './routes/finalize.js';
 import { adminListSnapshots, adminGetSnapshot } from './routes/admin.js';
 import { planRoute } from './routes/plan.js';
 import { healthRoute } from './routes/health.js';
+import { getDraft, putDraft } from './routes/draft.js';
 import { adminAuthorized, adminSecretConfigured } from './lib/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,6 +51,9 @@ app.get('/api/health', healthRoute);
 app.post('/api/finalize', finalizeRoute);
 
 app.post('/api/plan', planRoute);
+
+app.get('/api/draft', getDraft);
+app.put('/api/draft', putDraft);
 
 // Admin routes share an auth gate
 function adminGate(req: Request, res: Response, next: NextFunction) {

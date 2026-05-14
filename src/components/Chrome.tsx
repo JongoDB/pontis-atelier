@@ -4,6 +4,7 @@ import { Wordmark } from './Wordmark';
 import { cn } from '../lib/cn';
 import { COUNTS, GENERATED_AT } from '../data/data';
 import { TENANT } from '../tenant.config';
+import { SyncIndicator } from './SyncIndicator';
 
 export type Section = 'browse' | 'plan' | 'about';
 
@@ -80,6 +81,7 @@ export function Chrome({ active, onNavigate, selectedCount, onOpenPlanner }: Chr
         </nav>
 
         <div className="flex items-center gap-3">
+          <SyncIndicator />
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('atelier:restart-walkthrough'))}
