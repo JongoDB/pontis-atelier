@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.local
+.env.production
+.env.*.local
+.vite/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Private source materials — the FSC/ĒSO T-chart workbook + ĒSO Brand Guide PDF
+# live in `_src/` locally but must NOT be committed to a public repo. Drop them
+# in fresh on any machine where you need to re-run the parser. See _src/README.md.
+_src/*
+!_src/README.md
+
+# Playwright snapshots from QA passes (kept locally for debugging, not shipped)
+*.png
+.playwright-mcp/
+
+# OS noise
+.DS_Store
+Thumbs.db
+*.swp

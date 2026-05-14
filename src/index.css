@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------------------------
+   Pontis Atelier — global styles
+   Palette: ĒSO Brand Guide (Winter 2026). Type: Inter (Mabry Pro fallback when licensed).
+   Architectural restraint above all. Whitespace is the dominant element.
+   ----------------------------------------------------------------------------------- */
+
+:root {
+  --pearl: #f9f7f4;
+  --bone: #edeae2;
+  --midnight: #214144;
+  --clay: #828279;
+  --burnt: #61655f;
+  --laser: #e9ff14;
+  --ink: #1a3134;
+
+  --font-display: 'Mabry Pro', 'Inter Display', 'Inter', system-ui, sans-serif;
+  --font-body: 'Mabry Pro', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss01', 'cv11', 'cv05', 'ss03';
+  font-family: var(--font-body);
+}
+
+body {
+  background: var(--pearl);
+  color: var(--midnight);
+  font-variant-ligatures: contextual common-ligatures;
+}
+
+/* The macron over the E — keep it readable in any UI surface */
+.macron::before {
+  content: 'Ē';
+}
+
+/* Selection always reads as a quiet ĒSO accent */
+::selection {
+  background: var(--laser);
+  color: var(--midnight);
+}
+
+/* Hairline rule — repeat throughout for architectural restraint */
+.hairline { background: rgba(33, 65, 68, 0.14); height: 1px; width: 100%; }
+.hairline-v { background: rgba(33, 65, 68, 0.14); width: 1px; height: 100%; }
+
+/* Background atmosphere: a very low-contrast grid hints at drafting paper */
+.bg-drafting {
+  background-image:
+    linear-gradient(to right, rgba(33, 65, 68, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(33, 65, 68, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: 0 0;
+}
+
+/* Plan/Build/Finish texture system — distilled, hand-stroked, ĒSO-aligned */
+.bg-plan {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(33, 65, 68, 0.025) 0 1px, transparent 1px 6px);
+}
+.bg-build {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(33, 65, 68, 0.04) 0 1px, transparent 1px 4px);
+}
+.bg-finish {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(33, 65, 68, 0.045) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 70% 60%, rgba(33, 65, 68, 0.04) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 40% 80%, rgba(33, 65, 68, 0.05) 0 1px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+/* Eyebrow caps for ĒSO descriptors (small, wide tracking) */
+.eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--burnt);
+  font-weight: 500;
+}
+
+/* Subtle focus rings consistent across the app */
+:focus-visible {
+  outline: 2px solid var(--midnight);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Inputs: ĒSO-tuned */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 1px;
+  background: rgba(33, 65, 68, 0.2);
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--midnight);
+  margin-top: -7px;
+  border: 2px solid var(--pearl);
+  box-shadow: 0 1px 3px rgba(33, 65, 68, 0.18);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+input[type='range']::-moz-range-track {
+  height: 1px;
+  background: rgba(33, 65, 68, 0.2);
+}
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--midnight);
+  border: 2px solid var(--pearl);
+}
+
+/* Wordmark hover: reveal etymology in a quiet tooltip */
+.etymology-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--midnight);
+  color: var(--pearl);
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+  pointer-events: none;
+  z-index: 50;
+  font-style: italic;
+}
+.etymology-trigger:hover .etymology-tip,
+.etymology-trigger:focus .etymology-tip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* A tiny custom scrollbar for the plan tray */
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: rgba(33, 65, 68, 0.25); border-radius: 4px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Module card flip surface */
+.card-flip {
+  perspective: 1200px;
+}
+.card-flip-inner {
+  transform-style: preserve-3d;
+  transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+.card-flip[data-flipped='true'] .card-flip-inner {
+  transform: rotateY(180deg);
+}
+.card-flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.card-flip-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* Print: single-page export shape */
+@media print {
+  @page { size: A4 portrait; margin: 16mm; }
+  body { background: white; color: black; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .print-page-break { page-break-after: always; }
+}
+
+.print-only { display: none; }
+
+/* Generic line clamp */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The hand-drawn dividing dot used in copy: "·" with proper spacing */
+.dot {
+  display: inline-block;
+  margin: 0 0.45em;
+  opacity: 0.5;
+}
