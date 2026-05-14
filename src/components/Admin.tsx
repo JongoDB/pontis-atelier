@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, LockKeyhole, RefreshCw, AlertTriangle, Eye,
-  Calendar, User, Clock, DollarSign, ListChecks, FileText,
+  ArrowLeft, RefreshCw, AlertTriangle, Eye,
+  Calendar, User, Clock, DollarSign, ListChecks,
 } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { ALL_MODULES, MODULE_BY_ID, SECTION_BY_KEY } from '../data/data';
-import { Wordmark, EsoMark } from './Wordmark';
+import { EsoMark } from './Wordmark';
 import { compactCurrency, compactNumber } from '../lib/format';
-
-const SECRET_KEY = 'pontis-atelier-admin-secret';
 
 interface SnapshotListItem {
   id: string;
@@ -33,32 +31,30 @@ interface SnapshotDetail extends SnapshotListItem {
 }
 
 export function AdminPage() {
-  const [secret, setSecret] = useState<string>(() => sessionStorage.getItem(SECRET_KEY) ?? '');
-  const [draftSecret, setDraftSecret] = useState('');
-  const [authError, setAuthError] = useState<string | null>(null);
-
+  // HTTP Basic Auth happens at the server before the SPA is served — by the
+  // time this component mounts, the browser has already prompted and stored
+  // the credentials. Subsequent fetch() calls to /api/admin/* automatically
+  // carry the Authorization header (same origin + same realm).
   const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  // Try a list call with whatever secret is in sessionStorage on mount
   useEffect(() => {
-    if (secret) loadList(secret);
+    loadList();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadList(s: string) {
+  async function loadList() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/snapshots?limit=200', {
-        headers: { 'x-admin-secret': s },
-      });
+      const res = await fetch('/api/admin/snapshots?limit=200', { credentials: 'include' });
       if (res.status === 401) {
-        setAuthError('that password didn\'t match.');
-        setSecret('');
-        sessionStorage.removeItem(SECRET_KEY);
+        // In dev (Vite proxies to Express but the SPA isn't gated yet), the
+        // first call may 401 before the browser has cached credentials. The
+        // browser will retry on the next user action.
+        setError('not authenticated — refresh the page to retry');
         return;
       }
       if (!res.ok) {
@@ -67,7 +63,6 @@ export function AdminPage() {
       }
       const data = await res.json();
       setSnapshots(data.snapshots ?? []);
-      setAuthError(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -75,21 +70,9 @@ export function AdminPage() {
     }
   }
 
-  function submitSecret(e?: React.FormEvent) {
-    e?.preventDefault();
-    if (!draftSecret.trim()) return;
-    sessionStorage.setItem(SECRET_KEY, draftSecret);
-    setSecret(draftSecret);
-    loadList(draftSecret);
-  }
-
-  if (!secret) {
-    return <PasswordGate draft={draftSecret} setDraft={setDraftSecret} submit={submitSecret} error={authError} />;
-  }
-
   return (
     <div className="min-h-screen bg-pearl bg-drafting">
-      <header className="sticky top-0 z-30 bg-pearl/90 backdrop-blur-sm border-b border-midnight/15">
+      <header className="sticky top-0 z-30 bg-pearl border-b border-midnight/15">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between gap-6">
           <div className="flex items-center gap-6">
             <a href="/" className="flex items-center gap-3 text-midnight">
@@ -100,24 +83,19 @@ export function AdminPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => loadList(secret)}
+              onClick={() => loadList()}
               disabled={loading}
               className="flex items-center gap-1.5 text-sm text-burnt hover:text-midnight transition-colors"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
               <span>{loading ? 'refreshing…' : 'refresh'}</span>
             </button>
-            <button
-              onClick={() => {
-                sessionStorage.removeItem(SECRET_KEY);
-                setSecret('');
-                setDraftSecret('');
-                setSnapshots([]);
-              }}
-              className="text-xs text-clay hover:text-midnight"
+            <span
+              title="HTTP Basic Auth credentials are cached by the browser. Close the tab (or all browser windows on some browsers) to sign out."
+              className="text-xs text-clay hover:text-midnight cursor-help"
             >
-              sign out
-            </button>
+              close tab to sign out
+            </span>
           </div>
         </div>
       </header>
@@ -169,7 +147,6 @@ export function AdminPage() {
         {openId && (
           <SnapshotDetailModal
             id={openId}
-            secret={secret}
             onClose={() => setOpenId(null)}
           />
         )}
@@ -181,62 +158,6 @@ export function AdminPage() {
           <span>fsc admin · v1</span>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function PasswordGate({
-  draft, setDraft, submit, error,
-}: {
-  draft: string; setDraft: (v: string) => void; submit: (e?: React.FormEvent) => void; error: string | null;
-}) {
-  return (
-    <div className="min-h-screen bg-pearl bg-drafting flex flex-col">
-      <header className="px-6 md:px-10 py-6">
-        <Wordmark showEtymology={false} />
-      </header>
-      <main className="grow flex items-center justify-center px-6">
-        <form onSubmit={submit} className="w-full max-w-md">
-          <p className="eyebrow !text-burnt">admin · sign in</p>
-          <h1 className="font-display text-display text-midnight mt-2">
-            who's there?
-          </h1>
-          <p className="text-burnt mt-3 text-[15px] leading-relaxed">
-            this page is for fsc only. enter the shared admin password to see the
-            finalized plans maggie (or anyone else using atelier) has committed.
-          </p>
-
-          <div className="mt-8 flex items-stretch gap-2">
-            <div className="flex-1 flex items-center gap-2 px-3 py-2 border-b-2 border-midnight">
-              <LockKeyhole size={14} className="text-burnt shrink-0" />
-              <input
-                type="password"
-                autoFocus
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="admin password"
-                className="flex-1 bg-transparent text-midnight placeholder-clay/60 focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!draft.trim()}
-              className="px-4 py-2 rounded-sm bg-midnight text-pearl hover:bg-ink transition-colors text-sm disabled:opacity-40"
-            >
-              <ArrowRight size={14} />
-            </button>
-          </div>
-          {error && (
-            <p className="mt-3 text-[12px] text-burnt italic">
-              <AlertTriangle size={11} className="inline mr-1" />
-              {error}
-            </p>
-          )}
-          <p className="mt-6 text-[11px] text-clay italic">
-            set <span className="font-mono">ADMIN_SECRET</span> in your vercel project env. password is cached in sessionStorage for this tab only.
-          </p>
-        </form>
-      </main>
     </div>
   );
 }
@@ -287,21 +208,19 @@ function SnapshotRow({ snap, onOpen }: { snap: SnapshotListItem; onOpen: () => v
   );
 }
 
-function SnapshotDetailModal({ id, secret, onClose }: { id: string; secret: string; onClose: () => void }) {
+function SnapshotDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
   const [detail, setDetail] = useState<SnapshotDetail | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/admin/snapshots/${encodeURIComponent(id)}`, {
-      headers: { 'x-admin-secret': secret },
-    })
+    fetch(`/api/admin/snapshots/${encodeURIComponent(id)}`, { credentials: 'include' })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data) => setDetail(data.snapshot))
       .catch((e) => setErr(e.message ?? String(e)));
-  }, [id, secret]);
+  }, [id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();

@@ -15,7 +15,7 @@ import { adminListSnapshots, adminGetSnapshot } from './routes/admin.js';
 import { planRoute } from './routes/plan.js';
 import { healthRoute } from './routes/health.js';
 import { getDraft, putDraft } from './routes/draft.js';
-import { adminAuthorized, adminSecretConfigured } from './lib/auth.js';
+import { requireBasicAuth } from './lib/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');
@@ -55,19 +55,11 @@ app.post('/api/plan', planRoute);
 app.get('/api/draft', getDraft);
 app.put('/api/draft', putDraft);
 
-// Admin routes share an auth gate
-function adminGate(req: Request, res: Response, next: NextFunction) {
-  if (!adminSecretConfigured()) {
-    return res.status(503).json({ ok: false, error: 'ADMIN_SECRET not configured' });
-  }
-  if (!adminAuthorized(req)) {
-    return res.status(401).json({ ok: false, error: 'unauthorized' });
-  }
-  next();
-}
-
-app.get('/api/admin/snapshots', adminGate, adminListSnapshots);
-app.get('/api/admin/snapshots/:id', adminGate, adminGetSnapshot);
+// Admin routes — HTTP Basic Auth (both the JSON API and the SPA route below).
+// Same realm string in both places so the browser caches credentials once
+// and replays them automatically across endpoints.
+app.get('/api/admin/snapshots', requireBasicAuth, adminListSnapshots);
+app.get('/api/admin/snapshots/:id', requireBasicAuth, adminGetSnapshot);
 
 // ── Static frontend ───────────────────────────────────────────────────────────
 
@@ -75,6 +67,15 @@ const DIST_DIR = path.join(PROJECT_ROOT, 'dist');
 
 if (NODE_ENV === 'production') {
   if (fs.existsSync(DIST_DIR)) {
+    // Gate the /admin SPA route with Basic Auth BEFORE the static handler
+    // serves up the bundle. Once the browser has authenticated for /admin,
+    // it replays the Authorization header on /api/admin/* automatically
+    // (same origin + same realm), so the dashboard fetches just work.
+    app.get(/^\/admin(\/.*)?$/, requireBasicAuth, (_req: Request, res: Response) => {
+      res.setHeader('cache-control', 'no-cache');
+      res.sendFile(path.join(DIST_DIR, 'index.html'));
+    });
+
     app.use(express.static(DIST_DIR, {
       // Long-cache hashed assets; let index.html stay fresh
       setHeaders: (res, filePath) => {
@@ -87,8 +88,9 @@ if (NODE_ENV === 'production') {
     }));
 
     // SPA fallback — Vite produces one index.html; everything that isn't an
-    // API route or a file in dist/ falls through to it.
-    app.get(/^\/(?!api\/).*/, (_req: Request, res: Response) => {
+    // API route or a file in dist/ falls through to it. /admin* is already
+    // handled above (with auth) so this regex carries over any other path.
+    app.get(/^\/(?!api\/|admin).*/, (_req: Request, res: Response) => {
       res.sendFile(path.join(DIST_DIR, 'index.html'));
     });
   } else {
