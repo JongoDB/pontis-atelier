@@ -80,7 +80,7 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelId}
-      className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto"
     >
       <button
         type="button"
@@ -187,7 +187,7 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
           {m.hoursSavedPerYear != null && (
             <section className="mt-10 pt-8 border-t border-midnight/10">
               <p className="eyebrow !text-burnt mb-4">business value · annual + cumulative</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ValueCard
                   label="@ internal rate"
                   rate={`$${assumptions.internalRate}/hr`}
@@ -218,24 +218,26 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
           )}
 
           {/* What it does + what it replaces (today vs with pontis) */}
-          <section className="mt-10 pt-8 border-t border-midnight/10 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Clock size={13} className="text-burnt" />
-                <p className="eyebrow !text-burnt">today</p>
+          <section className="mt-10 pt-8 border-t border-midnight/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-sm border border-midnight/10 bg-bone p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={13} className="text-burnt" />
+                  <p className="eyebrow !text-burnt">today</p>
+                </div>
+                <p className="text-[14px] text-burnt leading-relaxed">
+                  {m.currentTool || 'today this work happens by hand, by memory, or not at all — there\'s no system holding it.'}
+                </p>
               </div>
-              <p className="text-[14px] text-burnt leading-relaxed">
-                {m.currentTool || 'today this work happens by hand, by memory, or not at all — there\'s no system holding it.'}
-              </p>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <MoveRight size={13} className="text-midnight" />
-                <p className="eyebrow">with pontis</p>
+              <div className="rounded-sm border border-midnight/10 bg-cream p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <MoveRight size={13} className="text-midnight" />
+                  <p className="eyebrow">with pontis</p>
+                </div>
+                <p className="text-[14px] text-midnight leading-relaxed">
+                  {m.description}
+                </p>
               </div>
-              <p className="text-[14px] text-midnight leading-relaxed">
-                {m.description}
-              </p>
             </div>
           </section>
 
@@ -243,21 +245,25 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
           {(upstreamIds.length > 0 || downstreamIds.length > 0) && (
             <section className="mt-10 pt-8 border-t border-midnight/10">
               <p className="eyebrow !text-burnt mb-4">dependency graph</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <DepList
-                  icon={<Layers size={13} />}
-                  title={`needs first · ${upstreamIds.length} prerequisite${upstreamIds.length === 1 ? '' : 's'}`}
-                  ids={upstreamIds}
-                  empty="nothing — this is a foundation module."
-                  selectedSet={selectedSet}
-                />
-                <DepList
-                  icon={<GitBranch size={13} />}
-                  title={`unblocks · ${downstreamIds.length} downstream module${downstreamIds.length === 1 ? '' : 's'}`}
-                  ids={downstreamIds}
-                  empty="nothing right now — but later modules may depend on this."
-                  selectedSet={selectedSet}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-sm border border-midnight/10 bg-bone p-5">
+                  <DepList
+                    icon={<Layers size={13} />}
+                    title={`needs first · ${upstreamIds.length} prerequisite${upstreamIds.length === 1 ? '' : 's'}`}
+                    ids={upstreamIds}
+                    empty="nothing — this is a foundation module."
+                    selectedSet={selectedSet}
+                  />
+                </div>
+                <div className="rounded-sm border border-midnight/10 bg-bone p-5">
+                  <DepList
+                    icon={<GitBranch size={13} />}
+                    title={`unblocks · ${downstreamIds.length} downstream module${downstreamIds.length === 1 ? '' : 's'}`}
+                    ids={downstreamIds}
+                    empty="nothing right now — but later modules may depend on this."
+                    selectedSet={selectedSet}
+                  />
+                </div>
               </div>
             </section>
           )}
@@ -265,11 +271,13 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
           {/* Matrix reference */}
           {m.matrixRef && (
             <section className="mt-10 pt-8 border-t border-midnight/10">
-              <p className="eyebrow !text-burnt mb-2">automation opportunity matrix</p>
-              <p className="text-[13px] text-burnt">
-                this module corresponds to <span className="font-mono text-midnight">{m.matrixRef}</span> in fsc's 31-opportunity matrix.
-                cross-referenced during the may 12 readout.
-              </p>
+              <p className="eyebrow !text-burnt mb-3">automation opportunity matrix</p>
+              <div className="rounded-sm border border-midnight/10 bg-bone p-5">
+                <p className="text-[13px] text-burnt">
+                  this module corresponds to <span className="font-mono text-midnight">{m.matrixRef}</span> in fsc's 31-opportunity matrix.
+                  cross-referenced during the may 12 readout.
+                </p>
+              </div>
             </section>
           )}
 
@@ -277,14 +285,16 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
           {siblings.length > 0 && (
             <section className="mt-10 pt-8 border-t border-midnight/10">
               <p className="eyebrow !text-burnt mb-3">others in this section · {section?.name?.toLowerCase()}</p>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {siblings.map((s) => (
-                  <li key={s.id} className="text-[13px] text-burnt">
-                    <span className="font-mono text-[11px] text-clay tabular-nums mr-2">{s.id}</span>
-                    <span className="text-midnight">{s.name.toLowerCase()}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="rounded-sm border border-midnight/10 bg-bone p-5">
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {siblings.map((s) => (
+                    <li key={s.id} className="text-[13px] text-burnt">
+                      <span className="font-mono text-[11px] text-clay tabular-nums mr-2">{s.id}</span>
+                      <span className="text-midnight">{s.name.toLowerCase()}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </section>
           )}
 
@@ -317,7 +327,7 @@ function ValueCard({
   return (
     <div className={cn(
       'p-4 rounded-sm border',
-      accent ? 'border-laser bg-laser/10' : alt ? 'border-midnight/15 bg-bone/40' : 'border-midnight/15 bg-pearl'
+      accent ? 'border-laser bg-laser/30' : alt ? 'border-midnight/15 bg-cream' : 'border-midnight/15 bg-bone'
     )}>
       <p className="eyebrow !text-burnt">{label}</p>
       <p className="text-[11px] text-clay mt-0.5">{rate}</p>

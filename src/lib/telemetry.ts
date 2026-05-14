@@ -21,7 +21,8 @@ export type TelemetryKind =
   | 'export-pdf'
   | 'share-open'
   | 'undo'
-  | 'reset';
+  | 'reset'
+  | 'module-request-submit';
 
 export interface TelemetryEvent {
   k: TelemetryKind;
@@ -74,6 +75,7 @@ const ALL_KINDS: TelemetryKind[] = [
   'page-view', 'module-select', 'module-deselect', 'module-flip',
   'planner-submit', 'planner-apply', 'defer', 'priority-set',
   'export-csv', 'export-pdf', 'share-open', 'undo', 'reset',
+  'module-request-submit',
 ];
 
 export function rollup(): TelemetryRollup {

@@ -26,6 +26,28 @@ function Row({ label, value, sub, highlight }: { label: string; value: string; s
   );
 }
 
+interface DualValue { rate: string; value: string; tag: string }
+function DualRow({ label, sub, left, right }: { label: string; sub?: string; left: DualValue; right: DualValue }) {
+  return (
+    <div className="pt-2">
+      <div className="flex items-baseline justify-between mb-1.5">
+        <p className="text-[13px] text-burnt">{label}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-sm border border-midnight/15 bg-bone px-3 py-2">
+          <p className="text-[10px] uppercase tracking-widish text-clay">{left.tag} · {left.rate}</p>
+          <p className="font-display text-lg text-midnight tabular-nums mt-0.5">{left.value}</p>
+        </div>
+        <div className="rounded-sm border border-midnight/15 bg-bone px-3 py-2">
+          <p className="text-[10px] uppercase tracking-widish text-clay">{right.tag} · {right.rate}</p>
+          <p className="font-display text-lg text-midnight tabular-nums mt-0.5">{right.value}</p>
+        </div>
+      </div>
+      {sub && <p className="text-[10px] text-clay tracking-widish mt-1.5 italic">{sub}</p>}
+    </div>
+  );
+}
+
 function Slider({
   label, value, onChange, min, max, step, format, hint,
 }: {
@@ -115,20 +137,21 @@ export function CostPanel({ variant = 'sidebar' }: CostPanelProps) {
           value={summary.totalHoursSaved > 0 ? `${compactNumber(summary.totalHoursSaved)} hrs` : '—'}
           highlight
         />
-        <Row
-          label={`$ saved @ $${assumptions.internalRate}/hr`}
-          sub="internal blended rate"
-          value={compactCurrency(summary.annualSavedInternal)}
+
+        {/* The two rate-valuations are alternative ways to price the SAME recovered
+            hours, not two streams to add. Show both side-by-side so it's obvious
+            they're parallel — annual and 5-yr each shown as "internal · principal". */}
+        <DualRow
+          label="annual $ saved"
+          sub="value of those hours — two ways to price them, not summed"
+          left={{ rate: `$${assumptions.internalRate}/hr`, value: compactCurrency(summary.annualSavedInternal), tag: 'internal' }}
+          right={{ rate: `$${assumptions.principalRate}/hr`, value: compactCurrency(summary.annualSavedPrincipal), tag: 'principal' }}
         />
-        <Row
-          label={`$ saved @ $${assumptions.principalRate}/hr`}
-          sub="maggie's principal rate (displaced value)"
-          value={compactCurrency(summary.annualSavedPrincipal)}
-        />
-        <Row
-          label="5-year cumulative"
-          sub="internal rate · compounds"
-          value={compactCurrency(summary.fiveYearInternal)}
+        <DualRow
+          label="5-yr cumulative"
+          sub="annual × 5 years · same two valuations"
+          left={{ rate: `$${assumptions.internalRate}/hr`, value: compactCurrency(summary.fiveYearInternal), tag: 'internal' }}
+          right={{ rate: `$${assumptions.principalRate}/hr`, value: compactCurrency(summary.fiveYearPrincipal), tag: 'principal' }}
         />
         {summary.costPerRecoveredHour > 0 && (
           <Row

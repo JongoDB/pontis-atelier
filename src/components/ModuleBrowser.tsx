@@ -1,5 +1,5 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
-import { Search, Filter, ListFilter, X } from 'lucide-react';
+import { Search, Filter, ListFilter, X, Plus } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { ALL_MODULES, SECTIONS, MODULES_BY_SECTION, COUNTS } from '../data/data';
 import { ModuleCard } from './ModuleCard';
@@ -10,6 +10,9 @@ import type { PontisModule } from '../types';
 // Deep-dive panel is opened by user action — defer its bytes until then.
 const ModuleDeepDive = lazy(() =>
   import('./ModuleDeepDive').then((m) => ({ default: m.ModuleDeepDive }))
+);
+const RequestModule = lazy(() =>
+  import('./RequestModule').then((m) => ({ default: m.RequestModule }))
 );
 
 const COA_FILTERS = [
@@ -34,6 +37,7 @@ export function ModuleBrowser() {
   const [lifecycle, setLifecycle] = useState<typeof LIFECYCLE_OPTIONS[number]>('all');
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [deepDive, setDeepDive] = useState<PontisModule | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
   const selectedOrder = useStore((s) => s.selectedOrder);
   const selectedSet = useMemo(() => new Set(selectedOrder), [selectedOrder]);
 
@@ -159,6 +163,15 @@ export function ModuleBrowser() {
             <Filter size={11} aria-hidden="true" />
             <span>in my plan ({selectedOrder.length})</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setRequestOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-tight rounded-full border border-midnight/20 text-burnt hover:text-midnight hover:border-midnight transition-colors min-h-[32px]"
+            title="describe a module that isn't here — fsc reviews each request"
+          >
+            <Plus size={11} aria-hidden="true" />
+            <span>request a custom module</span>
+          </button>
         </div>
 
         <div className="mt-3 flex items-center justify-between text-xs text-clay">
@@ -241,15 +254,54 @@ export function ModuleBrowser() {
         })}
 
         {totalVisible === 0 && (
-          <div className="py-32 text-center text-burnt">
+          <div className="py-24 text-center text-burnt">
             <p className="font-display text-2xl italic mb-2">nothing matches that yet.</p>
-            <p className="text-sm">try a different phrase, or relax the filters.</p>
+            <p className="text-sm mb-6">try a different phrase, or relax the filters.</p>
+            <button
+              type="button"
+              onClick={() => setRequestOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-sm border border-midnight text-midnight text-sm hover:bg-midnight hover:text-pearl transition-colors"
+            >
+              <Plus size={14} />
+              describe what you wish was here
+            </button>
           </div>
+        )}
+
+        {/* Always-visible footer CTA — "don't see what you need?" prompt for a
+            custom module request. Sits below all sections so it doesn't crowd
+            the catalog but is always reachable. */}
+        {totalVisible > 0 && (
+          <section className="mt-16 pt-10 border-t border-midnight/10">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              <div className="md:col-span-8">
+                <p className="eyebrow !text-burnt">don't see what you need?</p>
+                <h3 className="font-display text-xl md:text-2xl text-midnight mt-2 leading-tight lowercase">
+                  the catalog is fsc's first cut — <span className="italic font-light text-burnt">tell us what's missing.</span>
+                </h3>
+                <p className="text-burnt text-[14px] mt-2 leading-relaxed max-w-xl">
+                  describe a module you wish existed, in the same shape as the ones on this page.
+                  fsc reviews every request and either folds it into a build window or comes back with a clarifying question.
+                </p>
+              </div>
+              <div className="md:col-span-4 flex md:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setRequestOpen(true)}
+                  className="flex items-center gap-2 px-5 py-3 rounded-sm bg-midnight text-pearl text-sm hover:bg-ink transition-colors"
+                >
+                  <Plus size={14} strokeWidth={2.5} />
+                  request a custom module
+                </button>
+              </div>
+            </div>
+          </section>
         )}
       </div>
 
       <Suspense fallback={null}>
         <ModuleDeepDive module={deepDive} onClose={() => setDeepDive(null)} />
+        <RequestModule open={requestOpen} onClose={() => setRequestOpen(false)} />
       </Suspense>
     </div>
   );

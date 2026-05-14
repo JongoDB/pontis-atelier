@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft, RefreshCw, AlertTriangle, Eye,
-  Calendar, User, Clock, DollarSign, ListChecks,
+  Calendar, User, Clock, DollarSign, ListChecks, Plus, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { ALL_MODULES, MODULE_BY_ID, SECTION_BY_KEY } from '../data/data';
@@ -30,12 +30,29 @@ interface SnapshotDetail extends SnapshotListItem {
   ip: string;
 }
 
+interface ModuleRequestItem {
+  id: string;
+  createdAt: string;
+  requestedBy: string;
+  name: string;
+  desiredOutcome: string;
+  description: string;
+  currentTool: string;
+  sectionKey: string;
+  lifecyclePhase: string;
+  hoursSavedPerYear: number | null;
+  dependencies: string[];
+  notes: string;
+  status: string;
+}
+
 export function AdminPage() {
   // HTTP Basic Auth happens at the server before the SPA is served — by the
   // time this component mounts, the browser has already prompted and stored
   // the credentials. Subsequent fetch() calls to /api/admin/* automatically
   // carry the Authorization header (same origin + same realm).
   const [snapshots, setSnapshots] = useState<SnapshotListItem[]>([]);
+  const [requests, setRequests] = useState<ModuleRequestItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -49,20 +66,24 @@ export function AdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/snapshots?limit=200', { credentials: 'include' });
-      if (res.status === 401) {
-        // In dev (Vite proxies to Express but the SPA isn't gated yet), the
-        // first call may 401 before the browser has cached credentials. The
-        // browser will retry on the next user action.
+      const [snapsRes, reqsRes] = await Promise.all([
+        fetch('/api/admin/snapshots?limit=200', { credentials: 'include' }),
+        fetch('/api/admin/module-requests', { credentials: 'include' }),
+      ]);
+      if (snapsRes.status === 401 || reqsRes.status === 401) {
         setError('not authenticated — refresh the page to retry');
         return;
       }
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status} — ${text.slice(0, 120)}`);
+      if (!snapsRes.ok) {
+        const text = await snapsRes.text();
+        throw new Error(`HTTP ${snapsRes.status} — ${text.slice(0, 120)}`);
       }
-      const data = await res.json();
-      setSnapshots(data.snapshots ?? []);
+      const snapsData = await snapsRes.json();
+      setSnapshots(snapsData.snapshots ?? []);
+      if (reqsRes.ok) {
+        const reqsData = await reqsRes.json();
+        setRequests(reqsData.requests ?? []);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -150,6 +171,8 @@ export function AdminPage() {
             onClose={() => setOpenId(null)}
           />
         )}
+
+        <ModuleRequestsSection requests={requests} />
       </main>
 
       <footer className="border-t border-midnight/15 mt-20">
@@ -229,7 +252,7 @@ function SnapshotDetailModal({ id, onClose }: { id: string; onClose: () => void 
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">
       <button onClick={onClose} aria-label="Close" className="fixed inset-0 bg-midnight/40 backdrop-blur-sm animate-fade" />
       <div className="relative w-full max-w-4xl bg-pearl my-6 md:my-10 mx-4 rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
         <header className="sticky top-0 bg-pearl border-b border-midnight/15 px-6 md:px-10 py-4 flex items-center justify-between gap-4 rounded-t-sm">
@@ -372,5 +395,125 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
       <div className="flex items-center gap-1.5 text-burnt">{icon}<span className="text-[10px] uppercase tracking-widish">{label}</span></div>
       <p className="font-display text-2xl text-midnight mt-1 tabular-nums">{value}</p>
     </div>
+  );
+}
+
+function ModuleRequestsSection({ requests }: { requests: ModuleRequestItem[] }) {
+  return (
+    <section className="mt-20 pt-10 border-t border-midnight/15">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+        <div className="md:col-span-8">
+          <p className="eyebrow">admin · feature requests</p>
+          <h2 className="font-display text-display text-midnight mt-2 leading-tight">
+            modules they wish existed.
+          </h2>
+        </div>
+        <div className="md:col-span-4 md:text-right">
+          <p className="text-burnt text-[14px] leading-relaxed max-w-md md:ml-auto">
+            {requests.length === 0
+              ? 'no custom-module requests yet.'
+              : `${requests.length} request${requests.length === 1 ? '' : 's'} on record · newest first.`}
+          </p>
+        </div>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="mt-10 py-16 text-center text-burnt">
+          <p className="font-display text-xl italic mb-2">no requests yet.</p>
+          <p className="text-sm text-clay">
+            when someone submits the "request a custom module" form, it shows up here.
+          </p>
+        </div>
+      ) : (
+        <ul className="mt-10 space-y-3">
+          {requests.map((r) => <ModuleRequestRow key={r.id} req={r} />)}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function ModuleRequestRow({ req }: { req: ModuleRequestItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const section = req.sectionKey ? SECTION_BY_KEY.get(req.sectionKey) : undefined;
+  return (
+    <li className="border border-midnight/15 rounded-sm bg-pearl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full text-left px-5 py-4 grid grid-cols-12 gap-4 hover:bg-bone/40 transition-colors"
+      >
+        <div className="col-span-12 md:col-span-5 flex items-start gap-3 min-w-0">
+          <Plus size={14} className="text-midnight mt-1 shrink-0" />
+          <div className="min-w-0">
+            <p className="font-display text-base text-midnight leading-tight lowercase truncate">{req.name.toLowerCase()}</p>
+            <p className="text-[11px] text-clay mt-0.5">
+              {new Date(req.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+              {req.requestedBy && <span className="text-burnt"> · {req.requestedBy}</span>}
+            </p>
+          </div>
+        </div>
+        <div className="col-span-6 md:col-span-3 text-[12px] text-burnt italic clamp-2 leading-snug">
+          {req.desiredOutcome ? `"${req.desiredOutcome}"` : <span className="text-clay/70">no outcome described</span>}
+        </div>
+        <div className="col-span-4 md:col-span-2 text-[11px] text-clay">
+          {section ? <span>§{section.key} {section.name.toLowerCase()}</span> : <span className="italic">fsc to assign section</span>}
+          {req.lifecyclePhase && (
+            <span className="block mt-0.5 text-burnt">{req.lifecyclePhase.replace(/^\d+\.\s+/, '').toLowerCase()}</span>
+          )}
+        </div>
+        <div className="col-span-2 md:col-span-2 flex items-center justify-end gap-2 text-[11px] text-burnt tabular-nums">
+          {req.hoursSavedPerYear != null && <span>{req.hoursSavedPerYear} hrs/yr</span>}
+          {expanded ? <ChevronDown size={14} className="text-clay" /> : <ChevronRight size={14} className="text-clay" />}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 pt-1 border-t border-midnight/10 bg-bone/40">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div>
+              <p className="eyebrow !text-burnt mb-2">today</p>
+              <p className="text-[13px] text-burnt leading-relaxed">
+                {req.currentTool || <span className="italic text-clay">not described</span>}
+              </p>
+            </div>
+            <div>
+              <p className="eyebrow mb-2">with pontis</p>
+              <p className="text-[13px] text-midnight leading-relaxed">
+                {req.description || <span className="italic text-clay">not described</span>}
+              </p>
+            </div>
+          </div>
+
+          {req.dependencies.length > 0 && (
+            <div className="mt-5">
+              <p className="eyebrow !text-burnt mb-2">depends on</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {req.dependencies.map((id) => {
+                  const m = MODULE_BY_ID.get(id);
+                  return (
+                    <li key={id} className="px-2.5 py-1 bg-pearl border border-midnight/15 rounded-full text-[11px] text-midnight">
+                      <span className="font-mono">{id}</span>
+                      {m && <span className="text-burnt"> · {m.name.toLowerCase().slice(0, 40)}</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {req.notes && (
+            <div className="mt-5">
+              <p className="eyebrow !text-burnt mb-2">notes</p>
+              <p className="text-[13px] text-burnt leading-relaxed whitespace-pre-line">{req.notes}</p>
+            </div>
+          )}
+
+          <div className="mt-5 pt-4 border-t border-midnight/10 text-[10px] text-clay font-mono">
+            request id · {req.id}
+          </div>
+        </div>
+      )}
+    </li>
   );
 }

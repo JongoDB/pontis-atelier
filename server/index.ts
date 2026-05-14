@@ -20,6 +20,7 @@ import { adminListSnapshots, adminGetSnapshot } from './routes/admin.js';
 import { planRoute } from './routes/plan.js';
 import { healthRoute } from './routes/health.js';
 import { getDraft, putDraft } from './routes/draft.js';
+import { createModuleRequest, adminListModuleRequests } from './routes/moduleRequests.js';
 import { requireBasicAuth } from './lib/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -60,11 +61,14 @@ app.post('/api/plan', planRoute);
 app.get('/api/draft', getDraft);
 app.put('/api/draft', putDraft);
 
+app.post('/api/module-requests', createModuleRequest);
+
 // Admin routes — HTTP Basic Auth (both the JSON API and the SPA route below).
 // Same realm string in both places so the browser caches credentials once
 // and replays them automatically across endpoints.
 app.get('/api/admin/snapshots', requireBasicAuth, adminListSnapshots);
 app.get('/api/admin/snapshots/:id', requireBasicAuth, adminGetSnapshot);
+app.get('/api/admin/module-requests', requireBasicAuth, adminListModuleRequests);
 
 // ── Static frontend ───────────────────────────────────────────────────────────
 

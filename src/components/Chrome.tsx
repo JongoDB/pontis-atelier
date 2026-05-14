@@ -6,7 +6,7 @@ import { COUNTS, GENERATED_AT } from '../data/data';
 import { TENANT } from '../tenant.config';
 import { SyncIndicator } from './SyncIndicator';
 
-export type Section = 'browse' | 'plan' | 'about';
+export type Section = 'browse' | 'fsc' | 'plan' | 'about';
 
 interface ChromeProps {
   active: Section;
@@ -16,9 +16,10 @@ interface ChromeProps {
 }
 
 const NAV: { key: Section; label: string; sub: string }[] = [
-  { key: 'browse',  label: 'modules',      sub: String(COUNTS.total) },
-  { key: 'plan',    label: 'my plan',      sub: '·' },
-  { key: 'about',   label: 'about',        sub: '·' },
+  { key: 'browse',  label: 'modules',          sub: String(COUNTS.total) },
+  { key: 'fsc',     label: 'fsc recommends',   sub: '·' },
+  { key: 'plan',    label: 'my plan',          sub: '·' },
+  { key: 'about',   label: 'about',            sub: '·' },
 ];
 
 export function Chrome({ active, onNavigate, selectedCount, onOpenPlanner }: ChromeProps) {

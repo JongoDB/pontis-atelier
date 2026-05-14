@@ -151,7 +151,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
         </form>
 
         {result && (
-          <div className="border-t border-midnight/10 bg-bone/40">
+          <div className="border-t border-midnight/10 bg-bone">
             <div className="px-6 py-5">
               <p className="text-[13px] text-burnt italic leading-relaxed">
                 "{result.rationale}"

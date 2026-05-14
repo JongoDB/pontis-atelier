@@ -24,8 +24,11 @@ const Splash = lazy(() =>
 const AdminPage = lazy(() =>
   import('./components/Admin').then((m) => ({ default: m.AdminPage }))
 );
+const FscRecommended = lazy(() =>
+  import('./components/FscRecommended').then((m) => ({ default: m.FscRecommended }))
+);
 
-type Page = 'browse' | 'plan' | 'about';
+type Page = 'browse' | 'fsc' | 'plan' | 'about';
 
 export function App() {
   // Pathname-based routing for the admin surface. /admin renders a different
@@ -123,6 +126,11 @@ function AtelierApp() {
 
       <main id="main-content" className="grow" tabIndex={-1}>
         {page === 'browse' && <ModuleBrowser />}
+        {page === 'fsc' && (
+          <Suspense fallback={<PageFallback />}>
+            <FscRecommended onGoToPlan={() => setPage('plan')} />
+          </Suspense>
+        )}
         {page === 'plan' && (
           <Suspense fallback={<PageFallback />}>
             <PlanPage />

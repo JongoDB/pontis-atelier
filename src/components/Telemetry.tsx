@@ -17,6 +17,7 @@ const HUMAN_NAMES: Record<TelemetryKind, string> = {
   'share-open':      'open share dialog',
   'undo':            'undo a change',
   'reset':           'reset plan',
+  'module-request-submit': 'request a custom module',
 };
 
 const CORE_KINDS: TelemetryKind[] = [

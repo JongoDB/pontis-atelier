@@ -66,6 +66,29 @@ export async function ensureSchema() {
       ua            TEXT NOT NULL DEFAULT '',
       state         TEXT NOT NULL
     );
+
+    -- Custom-module feature requests from Maggie. Mirrors the PontisModule
+    -- schema fields that the requester can plausibly fill out — id is assigned
+    -- by FSC at intake review; ROM / billable / weeks are estimated by FSC,
+    -- not Maggie.
+    CREATE TABLE IF NOT EXISTS module_requests (
+      id                    TEXT PRIMARY KEY,
+      created_at            INTEGER NOT NULL,
+      requested_by          TEXT NOT NULL DEFAULT '',
+      name                  TEXT NOT NULL,
+      desired_outcome       TEXT NOT NULL DEFAULT '',
+      description           TEXT NOT NULL DEFAULT '',
+      current_tool          TEXT NOT NULL DEFAULT '',
+      section_key           TEXT NOT NULL DEFAULT '',
+      lifecycle_phase       TEXT NOT NULL DEFAULT '',
+      hours_saved_per_year  REAL,
+      dependencies          TEXT NOT NULL DEFAULT '[]',
+      notes                 TEXT NOT NULL DEFAULT '',
+      status                TEXT NOT NULL DEFAULT 'new',
+      ua                    TEXT NOT NULL DEFAULT '',
+      ip                    TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX IF NOT EXISTS module_requests_created_at_idx ON module_requests (created_at DESC);
   `);
 }
 
@@ -86,4 +109,22 @@ export interface SnapshotRow {
   ua: string;
   ip: string;
   received_at: number;
+}
+
+export interface ModuleRequestRow {
+  id: string;
+  created_at: number;
+  requested_by: string;
+  name: string;
+  desired_outcome: string;
+  description: string;
+  current_tool: string;
+  section_key: string;
+  lifecycle_phase: string;
+  hours_saved_per_year: number | null;
+  dependencies: string;
+  notes: string;
+  status: string;
+  ua: string;
+  ip: string;
 }
