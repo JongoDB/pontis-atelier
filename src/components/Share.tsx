@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { X, Link2, Check, Copy } from 'lucide-react';
 import { useStore } from '../store';
 import { encodePlan, buildShareURL, decodePlan, clearShareHash } from '../lib/share';
-import { MODULE_BY_ID } from '../data/data';
 import { cn } from '../lib/cn';
+import { useModal } from '../lib/useModal';
 
 interface ShareDialogProps {
   open: boolean;
@@ -15,18 +15,12 @@ export function ShareDialog({ open, onClose }: ShareDialogProps) {
   const deferrals = useStore((s) => s.deferrals);
   const priorities = useStore((s) => s.priorities);
   const [copied, setCopied] = useState(false);
+  const { labelId } = useModal(open, onClose);
 
   const url = useMemo(() => {
     const enc = encodePlan({ selected: selectedOrder, deferrals, priorities });
     return buildShareURL(enc);
   }, [selectedOrder, deferrals, priorities]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -41,16 +35,30 @@ export function ShareDialog({ open, onClose }: ShareDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
-      <button onClick={onClose} aria-label="Close" className="absolute inset-0 bg-midnight/40 backdrop-blur-sm animate-fade" />
-      <div className="relative w-full max-w-lg bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelId}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+    >
+      <button
+        onClick={onClose}
+        aria-label="Close"
+        tabIndex={-1}
+        className="absolute inset-0 bg-midnight/40 backdrop-blur-sm animate-fade"
+      />
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto thin-scroll bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
         <header className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-midnight/10">
           <div className="flex items-center gap-2">
-            <Link2 size={14} className="text-burnt" />
-            <p className="eyebrow !tracking-[0.28em]">share this plan</p>
+            <Link2 size={14} className="text-burnt" aria-hidden="true" />
+            <p id={labelId} className="eyebrow !tracking-[0.28em]">share this plan</p>
           </div>
-          <button onClick={onClose} className="p-1 text-burnt hover:text-midnight" aria-label="Close">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            className="p-2 -mr-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-burnt hover:text-midnight"
+            aria-label="Close share dialog"
+          >
+            <X size={18} aria-hidden="true" />
           </button>
         </header>
         <div className="px-6 py-6">
@@ -165,8 +173,4 @@ export function SharedPlanBanner() {
       </div>
     </div>
   );
-}
-
-function modulesMissing(ids: string[]): string[] {
-  return ids.filter((id) => !MODULE_BY_ID.has(id));
 }

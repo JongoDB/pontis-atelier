@@ -46,6 +46,8 @@ function Slider({
       </div>
       <input
         type="range"
+        aria-label={label}
+        aria-valuetext={format(value)}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         min={min}

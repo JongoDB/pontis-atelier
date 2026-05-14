@@ -1,5 +1,6 @@
 import raw from './modules.json';
 import type { ModulesData, PontisModule, PontisSection } from '../types';
+import { buildDependencyIndex } from '../lib/dependencies';
 
 const data = raw as ModulesData;
 
@@ -12,6 +13,12 @@ export const GENERATED_AT = data.generatedAt;
 
 export const MODULE_BY_ID = new Map(ALL_MODULES.map((m) => [m.id, m] as const));
 export const SECTION_BY_KEY = new Map(SECTIONS.map((s) => [s.key, s] as const));
+
+// Shared dependency index. The catalog never changes at runtime, so each
+// component re-running `buildDependencyIndex(ALL_MODULES)` inside its own
+// `useMemo` was duplicating the same Maps in memory and burning cycles on
+// every mount. One singleton, imported everywhere.
+export const DEP_INDEX = buildDependencyIndex(ALL_MODULES);
 
 // Grouped by section, in section order. Within a section, FSC suggested sequence first.
 export const MODULES_BY_SECTION = (() => {

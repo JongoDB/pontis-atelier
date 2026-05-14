@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { Search, Filter, ListFilter, X } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { ALL_MODULES, SECTIONS, MODULES_BY_SECTION, COUNTS } from '../data/data';
 import { ModuleCard } from './ModuleCard';
-import { ModuleDeepDive } from './ModuleDeepDive';
 import { useStore } from '../store';
 import { compactNumber } from '../lib/format';
 import type { PontisModule } from '../types';
+
+// Deep-dive panel is opened by user action — defer its bytes until then.
+const ModuleDeepDive = lazy(() =>
+  import('./ModuleDeepDive').then((m) => ({ default: m.ModuleDeepDive }))
+);
 
 const COA_FILTERS = [
   { key: 'all',    label: 'all',         test: () => true },
@@ -81,46 +85,62 @@ export function ModuleBrowser() {
         </div>
 
         {/* Filter bar */}
-        <div className="mt-10 flex flex-col md:flex-row md:items-center gap-4 pb-4 border-b border-midnight/15">
-          <div className="flex items-center gap-2 grow max-w-md">
-            <Search size={15} className="text-burnt shrink-0" />
+        <div
+          role="search"
+          aria-label="Filter modules"
+          className="mt-10 flex flex-col md:flex-row md:items-center md:flex-wrap gap-3 md:gap-4 pb-4 border-b border-midnight/15"
+        >
+          <div className="flex items-center gap-2 grow md:max-w-md min-w-0">
+            <Search size={15} className="text-burnt shrink-0" aria-hidden="true" />
             <input
               type="search"
+              aria-label="Search modules by name, description, outcome, or what they replace"
               placeholder="search modules — name, description, outcome, what it replaces…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full py-2 bg-transparent text-sm placeholder-clay/70 focus:outline-none text-midnight"
+              className="w-full py-2 bg-transparent text-base md:text-sm placeholder-clay/70 focus:outline-none text-midnight"
             />
             {query && (
-              <button onClick={() => setQuery('')} className="text-burnt hover:text-midnight" aria-label="Clear">
+              <button
+                onClick={() => setQuery('')}
+                className="p-1 -mr-1 text-burnt hover:text-midnight"
+                aria-label="Clear search"
+              >
                 <X size={14} />
               </button>
             )}
           </div>
           <div className="hairline-v hidden md:block" />
-          <div className="flex items-center gap-1">
-            {COA_FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setCoaFilter(f.key)}
-                className={cn(
-                  'px-3 py-1.5 text-xs tracking-tight rounded-full transition-colors',
-                  coaFilter === f.key
-                    ? 'bg-midnight text-pearl'
-                    : 'text-burnt hover:text-midnight'
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div role="group" aria-label="Filter by COA tier" className="flex items-center gap-1 flex-wrap">
+            {COA_FILTERS.map((f) => {
+              const isActive = coaFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setCoaFilter(f.key)}
+                  aria-pressed={isActive}
+                  className={cn(
+                    'px-3 py-1.5 text-xs tracking-tight rounded-full transition-colors min-h-[32px]',
+                    isActive
+                      ? 'bg-midnight text-pearl'
+                      : 'text-burnt hover:text-midnight'
+                  )}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
           </div>
           <div className="hairline-v hidden md:block" />
           <div className="flex items-center gap-2">
-            <ListFilter size={13} className="text-burnt shrink-0" />
+            <ListFilter size={13} className="text-burnt shrink-0" aria-hidden="true" />
+            <label className="sr-only" htmlFor="lifecycle-filter">Filter by lifecycle phase</label>
             <select
+              id="lifecycle-filter"
               value={lifecycle}
               onChange={(e) => setLifecycle(e.target.value as typeof lifecycle)}
-              className="bg-transparent text-xs text-burnt hover:text-midnight focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs text-burnt hover:text-midnight focus:outline-none cursor-pointer min-h-[32px]"
             >
               {LIFECYCLE_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>{opt === 'all' ? 'all phases' : opt.toLowerCase()}</option>
@@ -128,13 +148,15 @@ export function ModuleBrowser() {
             </select>
           </div>
           <button
+            type="button"
             onClick={() => setShowSelectedOnly((s) => !s)}
+            aria-pressed={showSelectedOnly}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-tight rounded-full transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-tight rounded-full transition-colors min-h-[32px]',
               showSelectedOnly ? 'bg-laser text-midnight' : 'border border-midnight/20 text-burnt hover:text-midnight'
             )}
           >
-            <Filter size={11} />
+            <Filter size={11} aria-hidden="true" />
             <span>in my plan ({selectedOrder.length})</span>
           </button>
         </div>
@@ -194,8 +216,10 @@ export function ModuleBrowser() {
               <div
                 className={cn(
                   'grid gap-5',
-                  // Asymmetric: vary card span depth in lg by section index
-                  'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                  // Asymmetric: vary card span depth in lg by section index.
+                  // 2xl adds a fifth column on ultra-wide displays so each card
+                  // doesn't grow into a banner.
+                  'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
                 )}
               >
                 {list.map((m, idx) => {
@@ -224,7 +248,9 @@ export function ModuleBrowser() {
         )}
       </div>
 
-      <ModuleDeepDive module={deepDive} onClose={() => setDeepDive(null)} />
+      <Suspense fallback={null}>
+        <ModuleDeepDive module={deepDive} onClose={() => setDeepDive(null)} />
+      </Suspense>
     </div>
   );
 }

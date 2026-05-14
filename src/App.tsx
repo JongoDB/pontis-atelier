@@ -1,15 +1,29 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { Chrome, Footer, MobileNav } from './components/Chrome';
 import { ModuleBrowser } from './components/ModuleBrowser';
-import { PlanPage } from './components/PlanSummary';
-import { HeyPontis } from './components/HeyPontis';
-import { About } from './components/About';
-import { Splash } from './components/Splash';
 import { useStore } from './store';
 import { SharedPlanBanner } from './components/Share';
-import { AdminPage } from './components/Admin';
 import { track } from './lib/telemetry';
 import { draftSync } from './lib/sync';
+
+// Lazy-load the routes and modals that aren't on the critical path. The
+// initial bundle then only carries Chrome + ModuleBrowser + ModuleCard, which
+// is what a first-time visitor actually sees while the rest streams in.
+const PlanPage = lazy(() =>
+  import('./components/PlanSummary').then((m) => ({ default: m.PlanPage }))
+);
+const HeyPontis = lazy(() =>
+  import('./components/HeyPontis').then((m) => ({ default: m.HeyPontis }))
+);
+const About = lazy(() =>
+  import('./components/About').then((m) => ({ default: m.About }))
+);
+const Splash = lazy(() =>
+  import('./components/Splash').then((m) => ({ default: m.Splash }))
+);
+const AdminPage = lazy(() =>
+  import('./components/Admin').then((m) => ({ default: m.AdminPage }))
+);
 
 type Page = 'browse' | 'plan' | 'about';
 
@@ -21,7 +35,11 @@ export function App() {
     typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
 
   if (isAdminRoute) {
-    return <AdminPage />;
+    return (
+      <Suspense fallback={null}>
+        <AdminPage />
+      </Suspense>
+    );
   }
 
   return <AtelierApp />;
@@ -82,15 +100,17 @@ function AtelierApp() {
 
   return (
     <div className="min-h-full bg-pearl bg-drafting flex flex-col">
-      {splashOpen && (
-        <Splash
-          onChoose={handleSplashChoice}
-          onSkip={() => {
-            dismissWelcome();
-            setSplashOpen(false);
-          }}
-        />
-      )}
+      <Suspense fallback={null}>
+        {splashOpen && (
+          <Splash
+            onChoose={handleSplashChoice}
+            onSkip={() => {
+              dismissWelcome();
+              setSplashOpen(false);
+            }}
+          />
+        )}
+      </Suspense>
 
       <SharedPlanBanner />
 
@@ -101,16 +121,32 @@ function AtelierApp() {
         onOpenPlanner={() => setAskOpen(true)}
       />
 
-      <main className="grow">
+      <main id="main-content" className="grow" tabIndex={-1}>
         {page === 'browse' && <ModuleBrowser />}
-        {page === 'plan' && <PlanPage />}
+        {page === 'plan' && (
+          <Suspense fallback={<PageFallback />}>
+            <PlanPage />
+          </Suspense>
+        )}
       </main>
 
       <Footer />
 
       <MobileNav active={page} onNavigate={handleNavigate} selectedCount={selectedOrder.length} />
-      <HeyPontis open={askOpen} onClose={() => setAskOpen(false)} />
-      <About open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <Suspense fallback={null}>
+        <HeyPontis open={askOpen} onClose={() => setAskOpen(false)} />
+        <About open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      </Suspense>
+    </div>
+  );
+}
+
+// Soft loading state for lazy-loaded pages. Whitespace, not a spinner — chunks
+// arrive in tens of milliseconds on a warm cache; a spinner would just flicker.
+function PageFallback() {
+  return (
+    <div className="px-6 md:px-10 py-20 max-w-3xl mx-auto text-center">
+      <p className="eyebrow !text-clay/70">loading…</p>
     </div>
   );
 }

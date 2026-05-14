@@ -3,11 +3,12 @@ import {
   ArrowLeft, ArrowRight, Check, X, Sparkles, Download, Printer, Link2,
   Calendar, DollarSign, Clock, AlertTriangle, Trash2,
 } from 'lucide-react';
-import { ALL_MODULES, SECTION_BY_KEY } from '../data/data';
+import { ALL_MODULES, SECTION_BY_KEY, DEP_INDEX } from '../data/data';
 import { useStore } from '../store';
 import { computeSummary } from '../lib/cost';
-import { buildDependencyIndex, missingDependencies } from '../lib/dependencies';
+import { missingDependencies } from '../lib/dependencies';
 import { buildSchedule, totalSpanWeeks } from '../lib/schedule';
+import { useModal } from '../lib/useModal';
 import { compactCurrency, compactNumber, currency, formatTime } from '../lib/format';
 import { cn } from '../lib/cn';
 import { downloadCSV, exportPDF } from '../lib/export';
@@ -38,7 +39,8 @@ export function FinalizeFlow({ open, onClose }: FinalizeFlowProps) {
   const assumptions = useStore((s) => s.assumptions);
   const finalize = useStore((s) => s.finalize);
 
-  const { byId } = useMemo(() => buildDependencyIndex(ALL_MODULES), []);
+  const { byId } = DEP_INDEX;
+  const { labelId } = useModal(open, onClose);
   const selectedSet = useMemo(() => new Set(selectedOrder), [selectedOrder]);
 
   const selected = useMemo(
@@ -85,13 +87,6 @@ export function FinalizeFlow({ open, onClose }: FinalizeFlowProps) {
       setNotify(null);
     }
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -145,14 +140,19 @@ export function FinalizeFlow({ open, onClose }: FinalizeFlowProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-pearl overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelId}
+      className="fixed inset-0 z-50 bg-pearl overflow-y-auto"
+    >
       <div className="min-h-full flex flex-col">
         {/* Header rail */}
         <header className="sticky top-0 z-10 bg-pearl border-b border-midnight/15">
           <div className="max-w-[1200px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <EsoMark size={22} />
-              <p className="eyebrow !tracking-[0.28em]">finalize your plan</p>
+              <p id={labelId} className="eyebrow !tracking-[0.28em]">finalize your plan</p>
             </div>
 
             {!isDone && (

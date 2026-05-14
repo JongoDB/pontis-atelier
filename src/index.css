@@ -28,6 +28,8 @@ html, body, #root {
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   font-feature-settings: 'ss01', 'cv11', 'cv05', 'ss03';
   font-family: var(--font-body);
 }
@@ -36,6 +38,60 @@ body {
   background: var(--pearl);
   color: var(--midnight);
   font-variant-ligatures: contextual common-ligatures;
+  /* Suppress the iOS Safari blue flash on taps — we provide our own focus rings */
+  -webkit-tap-highlight-color: transparent;
+  /* Avoid horizontal scroll surprises from any rogue overflow */
+  overflow-x: hidden;
+}
+
+/* When a full-screen modal is open we lock background scroll. Components add
+   the .modal-open class to <body> on mount and remove it on unmount. */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Reduced-motion preference: respect it. The riseIn / sweep / pulseDot
+   animations are decorative, not load-bearing. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Visually-hidden but screen-reader-accessible (used by the skip link) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.sr-only.focus\:not-sr-only:focus,
+.focus\:not-sr-only:focus {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  width: auto;
+  height: auto;
+  padding: 8px 14px;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background: var(--midnight);
+  color: var(--pearl);
+  border-radius: 2px;
+  z-index: 100;
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 
 /* The macron over the E — keep it readable in any UI surface */
@@ -163,6 +219,12 @@ input[type='range']::-moz-range-thumb {
 .thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .thin-scroll::-webkit-scrollbar-thumb { background: rgba(33, 65, 68, 0.25); border-radius: 4px; }
 .thin-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Honor the iOS home-bar inset. Mobile bottom nav sits in this lane; the main
+   content + footer leave room for the nav plus this inset. */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+.mb-safe-nav { margin-bottom: calc(56px + env(safe-area-inset-bottom)); }
+.h-safe-nav { height: calc(56px + env(safe-area-inset-bottom)); }
 
 /* Module card flip surface */
 .card-flip {

@@ -1,31 +1,30 @@
 import { useEffect, useMemo } from 'react';
 import {
-  X, ArrowRight, Plus, Check, Clock, Calendar, DollarSign, TrendingUp,
-  AlertTriangle, Link2, MoveRight, Layers, GitBranch, Sparkles,
+  X, Plus, Check, Clock, Calendar, DollarSign, TrendingUp,
+  AlertTriangle, MoveRight, Layers, GitBranch,
 } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { useStore } from '../store';
-import { ALL_MODULES, MODULE_BY_ID, SECTION_BY_KEY } from '../data/data';
-import { buildDependencyIndex, missingDependencies, expandPrerequisites } from '../lib/dependencies';
-import { compactCurrency, compactNumber, hours as fmtHours, currency } from '../lib/format';
+import { ALL_MODULES, MODULE_BY_ID, SECTION_BY_KEY, DEP_INDEX } from '../data/data';
+import { missingDependencies, expandPrerequisites } from '../lib/dependencies';
+import { compactCurrency, hours as fmtHours, currency } from '../lib/format';
 import type { PontisModule } from '../types';
 import { track } from '../lib/telemetry';
+import { useModal } from '../lib/useModal';
 
 interface DeepDiveProps {
   module: PontisModule | null;
   onClose: () => void;
 }
 
-const { byId, dependents } = (() => {
-  // Computed once at module load — the catalog never changes at runtime.
-  return buildDependencyIndex(ALL_MODULES);
-})();
+const { byId, dependents } = DEP_INDEX;
 
 export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
   const selectedOrder = useStore((s) => s.selectedOrder);
   const assumptions = useStore((s) => s.assumptions);
   const toggle = useStore((s) => s.toggle);
   const selectMany = useStore((s) => s.selectMany);
+  const { labelId } = useModal(!!m, onClose);
 
   const selected = m ? selectedOrder.includes(m.id) : false;
   const selectedSet = useMemo(() => new Set(selectedOrder), [selectedOrder]);
@@ -53,11 +52,8 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
 
   useEffect(() => {
     if (!m) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
     track('module-flip', { id: m.id, kind: 'deep-dive' });
-    return () => window.removeEventListener('keydown', onKey);
-  }, [m, onClose]);
+  }, [m]);
 
   if (!m) return null;
 
@@ -80,15 +76,21 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
   const phase = (m.lifecyclePhase || 'Cross-cutting').replace(/^\d+\.\s+/, '');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelId}
+      className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto"
+    >
       <button
         type="button"
         onClick={onClose}
         aria-label="Close"
+        tabIndex={-1}
         className="fixed inset-0 bg-midnight/40 backdrop-blur-sm animate-fade"
       />
 
-      <article className="relative w-full max-w-4xl bg-pearl my-6 md:my-10 mx-4 rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
+      <article className="relative w-full max-w-4xl bg-pearl my-6 md:my-10 mx-4 mb-[max(env(safe-area-inset-bottom),24px)] rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
         {/* Sticky header */}
         <header className="sticky top-0 z-10 bg-pearl border-b border-midnight/15">
           <div className="flex items-start justify-between gap-4 px-6 md:px-10 py-5">
@@ -97,22 +99,26 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
                 'flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] tracking-tight',
                 m.retainerCovered ? 'bg-midnight text-pearl' : 'border border-midnight/30 text-burnt'
               )}>
-                <span className={cn('w-1.5 h-1.5 rounded-full', m.retainerCovered ? 'bg-laser' : 'bg-burnt')} />
+                <span className={cn('w-1.5 h-1.5 rounded-full', m.retainerCovered ? 'bg-laser' : 'bg-burnt')} aria-hidden="true" />
                 {m.coa}
               </span>
               <span className="font-mono text-[12px] tabular-nums text-burnt">{m.id}</span>
-              <span className="text-clay/50">·</span>
+              <span className="text-clay/50" aria-hidden="true">·</span>
               <span className="text-[12px] text-burnt">§{m.sectionKey} {section?.name?.toLowerCase()}</span>
             </div>
-            <button onClick={onClose} className="p-2 -mr-2 text-burnt hover:text-midnight transition-colors" aria-label="Close">
-              <X size={18} />
+            <button
+              onClick={onClose}
+              className="p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-burnt hover:text-midnight transition-colors"
+              aria-label="Close module details"
+            >
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
         </header>
 
         <div className="px-6 md:px-10 py-8 md:py-10">
           {/* Headline + outcome */}
-          <h2 className="font-display text-display-lg text-midnight leading-tight lowercase">
+          <h2 id={labelId} className="font-display text-display-lg text-midnight leading-tight lowercase">
             {m.name}
           </h2>
           {m.desiredOutcome && (

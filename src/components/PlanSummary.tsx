@@ -1,19 +1,26 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { Download, Printer, RotateCcw, Trash2, Plus, Link2, Check, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '../lib/cn';
-import { ALL_MODULES, SECTION_BY_KEY, ROADMAP } from '../data/data';
+import { ALL_MODULES, ROADMAP, DEP_INDEX } from '../data/data';
 import { useStore } from '../store';
-import { buildDependencyIndex, missingDependencies, expandPrerequisites } from '../lib/dependencies';
+import { missingDependencies, expandPrerequisites } from '../lib/dependencies';
 import { computeSummary } from '../lib/cost';
-import { compactCurrency, compactNumber, hours, formatTime } from '../lib/format';
+import { compactCurrency, compactNumber, formatTime } from '../lib/format';
 import { downloadCSV, exportPDF } from '../lib/export';
 import { CostPanel } from './CostPanel';
 import { Gantt } from './Gantt';
-import { ShareDialog } from './Share';
 import { track } from '../lib/telemetry';
 import { TelemetryPanel } from './Telemetry';
-import { FinalizeFlow } from './Finalize';
 import { buildSchedule } from '../lib/schedule';
+
+// These two are heavy and only mount on demand — lazy keeps the Plan page
+// chunk lean for the common case of just viewing the gantt + cost panel.
+const ShareDialog = lazy(() =>
+  import('./Share').then((m) => ({ default: m.ShareDialog }))
+);
+const FinalizeFlow = lazy(() =>
+  import('./Finalize').then((m) => ({ default: m.FinalizeFlow }))
+);
 
 export function PlanPage() {
   const selectedOrder = useStore((s) => s.selectedOrder);
@@ -31,7 +38,7 @@ export function PlanPage() {
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const snapshots = useStore((s) => s.snapshots);
   const latestSnapshot = snapshots[0];
-  const { byId } = useMemo(() => buildDependencyIndex(ALL_MODULES), []);
+  const { byId } = DEP_INDEX;
   const selectedSet = useMemo(() => new Set(selectedOrder), [selectedOrder]);
 
   const selected = useMemo(
@@ -245,8 +252,10 @@ export function PlanPage() {
       {/* PRINT-ONLY one-page summary */}
       <PrintSummary selected={selected} summary={summary} deferrals={deferrals} />
 
-      <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
-      <FinalizeFlow open={finalizeOpen} onClose={() => setFinalizeOpen(false)} />
+      <Suspense fallback={null}>
+        <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+        <FinalizeFlow open={finalizeOpen} onClose={() => setFinalizeOpen(false)} />
+      </Suspense>
     </div>
   );
 }
@@ -309,7 +318,7 @@ function PrintSummary({
   const snapshots = useStore((s) => s.snapshots);
   const latest = snapshots[0];
   const priorities = useStore((s) => s.priorities);
-  const { byId } = useMemo(() => buildDependencyIndex(ALL_MODULES), []);
+  const { byId } = DEP_INDEX;
   const deferralMap = useMemo(() => new Map(Object.entries(deferrals)), [deferrals]);
   const orderedForSchedule = useMemo(() => {
     const ids = selected.map((m) => m.id);

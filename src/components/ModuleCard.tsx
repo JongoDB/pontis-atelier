@@ -1,10 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { Check, Plus, AlertTriangle, MessageSquareQuote, MoveRight, Clock, Sparkles, Pin } from 'lucide-react';
 import type { PontisModule } from '../types';
 import { cn } from '../lib/cn';
 import { useStore } from '../store';
-import { ALL_MODULES, MODULE_BY_ID } from '../data/data';
-import { buildDependencyIndex, missingDependencies, expandPrerequisites } from '../lib/dependencies';
+import { DEP_INDEX } from '../data/data';
+import { missingDependencies, expandPrerequisites } from '../lib/dependencies';
 import { hours, compactCurrency } from '../lib/format';
 import { track as trackTelemetry } from '../lib/telemetry';
 
@@ -87,23 +87,30 @@ interface ModuleCardProps {
   onOpenDeepDive?: (module: PontisModule) => void;
 }
 
-const { byId } = buildDependencyIndex(ALL_MODULES);
+const { byId } = DEP_INDEX;
 
-export function ModuleCard({ module: m, density = 'normal', className, onOpenDeepDive }: ModuleCardProps) {
+function ModuleCardInner({ module: m, density = 'normal', className, onOpenDeepDive }: ModuleCardProps) {
   const [flipped, setFlipped] = useState(false);
-  const selectedOrder = useStore((s) => s.selectedOrder);
+  // Focused selectors: this card only re-renders when *its* selection state
+  // or *its* priority changes. The previous `useStore((s) => s.selectedOrder)`
+  // re-rendered all 101 cards on every toggle.
+  const selected = useStore((s) => s.selectedOrder.includes(m.id));
+  const priority = useStore((s) => s.priorities[m.id] ?? null);
+  // Missing prereqs need the full set, but only when this card is selected.
+  // Returning the joined missing-id string keeps the selector result a string
+  // primitive, so equality-check is cheap. The selector reads state directly
+  // (not the outer `selected` closure variable) so it's self-contained.
+  const missingIds = useStore((s) => {
+    if (!s.selectedOrder.includes(m.id)) return '';
+    return missingDependencies(m, new Set(s.selectedOrder), byId)
+      .map((d) => d.id)
+      .join(',');
+  });
+  const missing = missingIds ? missingIds.split(',') : [];
+
   const toggle = useStore((s) => s.toggle);
   const selectMany = useStore((s) => s.selectMany);
-  const priorities = useStore((s) => s.priorities);
   const setPriority = useStore((s) => s.setPriority);
-  const selected = selectedOrder.includes(m.id);
-  const selectedSet = useMemo(() => new Set(selectedOrder), [selectedOrder]);
-  const priority = priorities[m.id] ?? null;
-
-  const missing = useMemo(
-    () => (selected ? missingDependencies(m, selectedSet, byId) : []),
-    [selected, m, selectedSet]
-  );
 
   const isCompact = density === 'compact';
 
@@ -113,7 +120,8 @@ export function ModuleCard({ module: m, density = 'normal', className, onOpenDee
   };
 
   const handleAutoResolve = () => {
-    const prereqs = expandPrerequisites(m.id, byId).filter((id) => !selectedSet.has(id));
+    const currentlySelected = new Set(useStore.getState().selectedOrder);
+    const prereqs = expandPrerequisites(m.id, byId).filter((id) => !currentlySelected.has(id));
     if (prereqs.length === 0) return;
     selectMany(prereqs, `auto-pulled in prereqs for ${m.id}`);
   };
@@ -230,14 +238,16 @@ export function ModuleCard({ module: m, density = 'normal', className, onOpenDee
             <button
               type="button"
               onClick={handleSelect}
+              aria-pressed={selected}
+              aria-label={selected ? `Remove ${m.name} from plan` : `Add ${m.name} to plan`}
               className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 py-2 text-sm tracking-tight transition-colors rounded-sm',
+                'flex-1 flex items-center justify-center gap-1.5 py-2 text-sm tracking-tight transition-colors rounded-sm min-h-[40px]',
                 selected
                   ? 'bg-midnight text-pearl hover:bg-ink'
                   : 'border border-midnight/30 text-midnight hover:bg-midnight hover:text-pearl'
               )}
             >
-              {selected ? <Check size={14} strokeWidth={2.5} /> : <Plus size={14} />}
+              {selected ? <Check size={14} strokeWidth={2.5} aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
               <span>{selected ? 'in my plan' : 'add to plan'}</span>
             </button>
             {selected && (
@@ -249,11 +259,11 @@ export function ModuleCard({ module: m, density = 'normal', className, onOpenDee
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onOpenDeepDive?.(m); }}
-              className="p-2 text-burnt hover:text-midnight transition-colors"
+              className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-burnt hover:text-midnight transition-colors"
               title="See this module in depth — business value, dependencies, what changes"
-              aria-label="Open module deep-dive"
+              aria-label={`Open deep-dive for ${m.name}`}
             >
-              <Sparkles size={14} />
+              <Sparkles size={14} aria-hidden="true" />
             </button>
           </footer>
 
@@ -263,10 +273,11 @@ export function ModuleCard({ module: m, density = 'normal', className, onOpenDee
               type="button"
               onClick={handleAutoResolve}
               className="absolute -top-2 -right-2 z-10 flex items-center gap-1.5 px-2.5 py-1 bg-laser text-midnight rounded-full text-[0.6875rem] font-medium shadow-md hover:scale-[1.04] transition-transform"
-              title={`Missing: ${missing.map((d) => d.id).join(', ')} — click to auto-add prerequisites`}
+              title={`Missing: ${missing.join(', ')} — click to auto-add prerequisites`}
+              aria-label={`Auto-add ${missing.length} missing prerequisite${missing.length === 1 ? '' : 's'}`}
             >
-              <AlertTriangle size={11} strokeWidth={2.5} />
-              <span>needs {missing.map((d) => d.id.replace('C3-', '')).join(', ')}</span>
+              <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
+              <span>needs {missing.map((id) => id.replace('C3-', '')).join(', ')}</span>
             </button>
           )}
         </article>
@@ -318,3 +329,8 @@ export function ModuleCard({ module: m, density = 'normal', className, onOpenDee
     </div>
   );
 }
+
+// memo: ModuleCard's props (the module object, onOpenDeepDive setter, className)
+// are stable across browser-level re-renders. Internal Zustand reads use
+// focused selectors, so a card re-renders only when its own state changes.
+export const ModuleCard = memo(ModuleCardInner);

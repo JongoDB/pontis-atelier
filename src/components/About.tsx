@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
 import { X, Compass, ArrowRight } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { EsoMark } from './Wordmark';
 import { COUNTS } from '../data/data';
+import { useModal } from '../lib/useModal';
 
 interface AboutProps {
   open: boolean;
@@ -14,34 +14,39 @@ function restartWalkthrough() {
 }
 
 export function About({ open, onClose }: AboutProps) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  const { labelId } = useModal(open, onClose);
 
   if (!open) return null;
   return (
-    <div className={cn('fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8')}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelId}
+      className={cn('fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8')}
+    >
       <button
         type="button"
         onClick={onClose}
         aria-label="Close"
         className="absolute inset-0 bg-midnight/40 backdrop-blur-sm animate-fade"
+        tabIndex={-1}
       />
-      <article className="relative w-full max-w-2xl bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
-        <header className="flex items-start justify-between px-8 md:px-12 pt-10 pb-2 border-b border-midnight/10">
+      <article className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto thin-scroll bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
+        <header className="flex items-start justify-between px-6 md:px-12 pt-8 md:pt-10 pb-2 border-b border-midnight/10">
           <div className="flex items-center gap-3">
             <EsoMark size={28} />
             <p className="eyebrow !tracking-[0.28em]">pontis atelier</p>
           </div>
-          <button onClick={onClose} className="p-2 -mr-2 text-burnt hover:text-midnight transition-colors" aria-label="Close">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            className="p-2 -mr-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-burnt hover:text-midnight transition-colors"
+            aria-label="Close about"
+          >
+            <X size={18} aria-hidden="true" />
           </button>
         </header>
-        <div className="px-8 md:px-12 py-10 md:py-12">
-          <h2 className="font-display text-3xl md:text-4xl tracking-tight leading-[1.05] text-midnight">
+        <div className="px-6 md:px-12 py-8 md:py-12">
+          <h2 id={labelId} className="font-display text-3xl md:text-4xl tracking-tight leading-[1.05] text-midnight">
             where pontis takes shape.
           </h2>
 
@@ -66,7 +71,7 @@ export function About({ open, onClose }: AboutProps) {
             </p>
           </div>
 
-          <div className="mt-10 grid grid-cols-3 gap-6 pt-7 border-t border-midnight/10">
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 pt-7 border-t border-midnight/10">
             <div>
               <p className="eyebrow mb-2">browse</p>
               <p className="text-sm text-burnt">{COUNTS.total} modules across {COUNTS.sections} pontis sections. each one a decision.</p>
@@ -81,7 +86,7 @@ export function About({ open, onClose }: AboutProps) {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-midnight/10 flex items-center justify-between gap-4">
+          <div className="mt-8 pt-6 border-t border-midnight/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <p className="text-[12px] text-clay italic">
               first time here, or want to see the entry points again?
             </p>
@@ -90,9 +95,9 @@ export function About({ open, onClose }: AboutProps) {
               onClick={() => { onClose(); setTimeout(restartWalkthrough, 60); }}
               className="flex items-center gap-1.5 text-sm text-midnight hover:underline underline-offset-4 decoration-laser decoration-2"
             >
-              <Compass size={14} />
+              <Compass size={14} aria-hidden="true" />
               <span>show me the walkthrough</span>
-              <ArrowRight size={12} />
+              <ArrowRight size={12} aria-hidden="true" />
             </button>
           </div>
         </div>

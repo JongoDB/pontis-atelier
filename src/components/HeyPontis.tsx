@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { X, ArrowRight, Sparkles, Check, ChevronRight, Cpu } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, ArrowRight, Sparkles, Check, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/cn';
-import { ALL_MODULES, MODULE_BY_ID } from '../data/data';
+import { ALL_MODULES, MODULE_BY_ID, DEP_INDEX } from '../data/data';
 import { useStore } from '../store';
-import { buildDependencyIndex } from '../lib/dependencies';
 import { runPlanner, type PlannerResult } from '../lib/planner-client';
 import { compactCurrency, compactNumber } from '../lib/format';
 import { track } from '../lib/telemetry';
+import { useModal } from '../lib/useModal';
 
 interface HeyPontisProps {
   open: boolean;
@@ -30,8 +30,8 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
   const selectMany = useStore((s) => s.selectMany);
   const selectedOrder = useStore((s) => s.selectedOrder);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const { byId } = useMemo(() => buildDependencyIndex(ALL_MODULES), []);
+  const { labelId } = useModal(open, onClose);
+  const { byId } = DEP_INDEX;
 
   useEffect(() => {
     if (open) {
@@ -43,13 +43,6 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
       setBusy(false);
     }
   }, [open, lastPrompt]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   const submit = async (text: string) => {
     if (!text.trim() || busy) return;
@@ -76,46 +69,59 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[6vh] md:pt-[10vh]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelId}
+      className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[6vh] md:pt-[10vh] pb-[max(env(safe-area-inset-bottom),16px)]"
+    >
       <button
         type="button"
         onClick={onClose}
         aria-label="Close"
+        tabIndex={-1}
         className="absolute inset-0 bg-midnight/40 backdrop-blur-sm animate-fade"
       />
-      <div className="relative w-full max-w-2xl bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[88vh] flex flex-col bg-pearl rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn overflow-hidden">
         <header className="flex items-center justify-between gap-3 px-6 pt-5 pb-3 border-b border-midnight/10">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-laser animate-pulseDot" />
-            <p className="eyebrow !tracking-[0.28em]">hey pontis</p>
+            <div className="w-1.5 h-1.5 rounded-full bg-laser animate-pulseDot" aria-hidden="true" />
+            <p id={labelId} className="eyebrow !tracking-[0.28em]">hey pontis</p>
           </div>
-          <button onClick={onClose} className="p-1 text-burnt hover:text-midnight transition-colors" aria-label="Close">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            className="p-2 -mr-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-burnt hover:text-midnight transition-colors"
+            aria-label="Close planner"
+          >
+            <X size={18} aria-hidden="true" />
           </button>
         </header>
 
+        <div className="overflow-y-auto thin-scroll flex-1">
         <form
           onSubmit={(e) => { e.preventDefault(); submit(prompt); }}
           className="px-6 pt-7 pb-5"
         >
           <div className="flex items-center gap-2 pb-3 border-b-2 border-midnight">
-            <Sparkles size={16} className={cn('shrink-0', busy ? 'text-midnight animate-pulse' : 'text-burnt')} />
+            <Sparkles size={16} aria-hidden="true" className={cn('shrink-0', busy ? 'text-midnight animate-pulse' : 'text-burnt')} />
+            <label htmlFor="heypontis-prompt" className="sr-only">Describe a plan for Pontis to draft</label>
             <input
+              id="heypontis-prompt"
               ref={inputRef}
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={busy ? 'pontis is thinking…' : 'build me a plan that…'}
               disabled={busy}
-              className="w-full bg-transparent text-lg md:text-xl placeholder-clay/60 focus:outline-none text-midnight font-display tracking-tight disabled:opacity-60"
+              className="w-full bg-transparent text-base md:text-lg placeholder-clay/60 focus:outline-none text-midnight font-display tracking-tight disabled:opacity-60"
             />
             <button
               type="submit"
-              className="p-2 rounded-full bg-midnight text-pearl hover:bg-ink transition-colors disabled:opacity-30"
+              className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-full bg-midnight text-pearl hover:bg-ink transition-colors disabled:opacity-30"
               disabled={!prompt.trim() || busy}
-              aria-label="Submit"
+              aria-label="Submit prompt"
             >
-              <ArrowRight size={14} />
+              <ArrowRight size={14} aria-hidden="true" />
             </button>
           </div>
 
@@ -200,21 +206,22 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
               <button
                 type="button"
                 onClick={() => setResult(null)}
-                className="text-sm text-burnt hover:text-midnight px-3 py-2"
+                className="text-sm text-burnt hover:text-midnight px-3 py-2 min-h-[40px]"
               >
                 edit prompt
               </button>
               <button
                 type="button"
                 onClick={applyPlan}
-                className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-sm bg-midnight text-pearl hover:bg-ink transition-colors text-sm"
+                className="ml-auto flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-sm bg-midnight text-pearl hover:bg-ink transition-colors text-sm"
               >
                 add to my plan
-                <ArrowRight size={14} />
+                <ArrowRight size={14} aria-hidden="true" />
               </button>
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

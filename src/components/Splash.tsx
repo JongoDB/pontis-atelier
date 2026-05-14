@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
 import { Compass, LayoutGrid, Sparkles } from 'lucide-react';
 import { useStore } from '../store';
 import { COUNTS } from '../data/data';
 import { EsoMark } from './Wordmark';
+import { useModal } from '../lib/useModal';
 
 interface SplashProps {
   onChoose: (target: 'browse' | 'plan' | 'ask') => void;
@@ -10,21 +10,25 @@ interface SplashProps {
 }
 
 export function Splash({ onChoose, onSkip }: SplashProps) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onSkip();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onSkip]);
+  const { labelId } = useModal(true, onSkip);
 
   return (
-    <div className="fixed inset-0 z-50 bg-pearl bg-drafting overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelId}
+      className="fixed inset-0 z-50 bg-pearl bg-drafting overflow-y-auto"
+    >
       <div className="min-h-full flex flex-col">
         <header className="flex items-center justify-between px-6 md:px-10 py-6">
           <div className="flex items-center gap-3">
             <EsoMark size={22} />
             <p className="eyebrow !tracking-[0.28em]">pontis atelier · welcome</p>
           </div>
-          <button onClick={onSkip} className="text-xs text-burnt hover:text-midnight transition-colors">
+          <button
+            onClick={onSkip}
+            className="text-xs text-burnt hover:text-midnight transition-colors p-2 -mr-2 min-h-[44px]"
+          >
             skip intro →
           </button>
         </header>
@@ -33,7 +37,10 @@ export function Splash({ onChoose, onSkip }: SplashProps) {
           <div className="max-w-[1100px] w-full grid grid-cols-12 gap-6 md:gap-10">
             <div className="col-span-12 md:col-span-7">
               <p className="eyebrow !text-burnt mb-5 animate-fade">where pontis takes shape</p>
-              <h1 className="font-display text-display-xl text-midnight tracking-tight leading-[0.95] animate-riseIn">
+              <h1
+                id={labelId}
+                className="font-display text-display-xl text-midnight tracking-tight leading-[0.95] animate-riseIn"
+              >
                 let's pick what<br />
                 <span className="italic font-light text-burnt">pontis is to you.</span>
               </h1>
@@ -95,14 +102,14 @@ function SplashOption({
     <button
       type="button"
       onClick={onClick}
-      className={`group text-left flex items-center gap-4 p-4 border ${accent ? 'border-midnight bg-midnight text-pearl hover:bg-ink' : 'border-midnight/15 bg-pearl hover:border-midnight'} transition-all rounded-sm`}
+      className={`group text-left flex items-center gap-4 p-4 min-h-[64px] border ${accent ? 'border-midnight bg-midnight text-pearl hover:bg-ink' : 'border-midnight/15 bg-pearl hover:border-midnight'} transition-all rounded-sm`}
     >
-      <span className={`${accent ? 'text-laser' : 'text-burnt group-hover:text-midnight'} transition-colors`}>{icon}</span>
+      <span aria-hidden="true" className={`${accent ? 'text-laser' : 'text-burnt group-hover:text-midnight'} transition-colors`}>{icon}</span>
       <span className="flex-1 min-w-0">
         <span className={`block text-[14px] font-medium ${accent ? 'text-pearl' : 'text-midnight'}`}>{title.toLowerCase()}</span>
         <span className={`block text-[11px] mt-0.5 ${accent ? 'text-pearl/60' : 'text-clay'}`}>{sub}</span>
       </span>
-      <span className={accent ? 'text-laser' : 'text-clay group-hover:text-midnight'}>→</span>
+      <span aria-hidden="true" className={accent ? 'text-laser' : 'text-clay group-hover:text-midnight'}>→</span>
     </button>
   );
 }

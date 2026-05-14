@@ -1,9 +1,8 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { AlertTriangle, GripVertical, RotateCcw, X, Sliders } from 'lucide-react';
 import { cn } from '../lib/cn';
-import { ALL_MODULES, SECTION_BY_KEY } from '../data/data';
+import { SECTION_BY_KEY, DEP_INDEX } from '../data/data';
 import { useStore } from '../store';
-import { buildDependencyIndex } from '../lib/dependencies';
 import { buildSchedule, totalSpanWeeks, quarterLabel, QUARTER_DIVIDERS, type ScheduledModule } from '../lib/schedule';
 import { track } from '../lib/telemetry';
 
@@ -14,7 +13,7 @@ export function Gantt() {
   const reorder = useStore((s) => s.reorder);
   const defer = useStore((s) => s.defer);
   const toggle = useStore((s) => s.toggle);
-  const { byId } = useMemo(() => buildDependencyIndex(ALL_MODULES), []);
+  const { byId } = DEP_INDEX;
 
   // Apply Maggie's rack/stack: items with explicit priority float to the top
   // (lower priority number = sooner). Within same priority, fall back to the
@@ -201,7 +200,7 @@ function GanttRow({
       )}
     >
       {/* Label gutter */}
-      <div className="w-[200px] md:w-[280px] shrink-0 flex items-center gap-2 pr-3 border-r border-midnight/8">
+      <div className="w-[150px] sm:w-[200px] md:w-[280px] shrink-0 flex items-center gap-2 pr-3 border-r border-midnight/8">
         <GripVertical size={12} className="text-clay/60 cursor-grab active:cursor-grabbing group-hover:text-burnt transition-colors" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
