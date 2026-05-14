@@ -313,7 +313,7 @@ function SnapshotDetailModal({ id, secret, onClose }: { id: string; secret: stri
     <div className="fixed inset-0 z-50 flex items-stretch justify-center overflow-y-auto">
       <button onClick={onClose} aria-label="Close" className="fixed inset-0 bg-midnight/40 backdrop-blur-sm animate-fade" />
       <div className="relative w-full max-w-4xl bg-pearl my-6 md:my-10 mx-4 rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
-        <header className="sticky top-0 bg-pearl/95 backdrop-blur-sm border-b border-midnight/15 px-6 md:px-10 py-4 flex items-center justify-between gap-4 rounded-t-sm">
+        <header className="sticky top-0 bg-pearl border-b border-midnight/15 px-6 md:px-10 py-4 flex items-center justify-between gap-4 rounded-t-sm">
           <button onClick={onClose} className="flex items-center gap-1.5 text-burnt hover:text-midnight text-sm">
             <ArrowLeft size={14} /> all snapshots
           </button>

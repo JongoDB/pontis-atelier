@@ -148,7 +148,7 @@ export function FinalizeFlow({ open, onClose }: FinalizeFlowProps) {
     <div className="fixed inset-0 z-50 bg-pearl overflow-y-auto">
       <div className="min-h-full flex flex-col">
         {/* Header rail */}
-        <header className="sticky top-0 z-10 bg-pearl/95 backdrop-blur-sm border-b border-midnight/15">
+        <header className="sticky top-0 z-10 bg-pearl border-b border-midnight/15">
           <div className="max-w-[1200px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <EsoMark size={22} />
@@ -238,7 +238,7 @@ export function FinalizeFlow({ open, onClose }: FinalizeFlowProps) {
 
         {/* Footer rail */}
         {!isDone && (
-          <footer className="sticky bottom-0 bg-pearl/95 backdrop-blur-sm border-t border-midnight/15">
+          <footer className="sticky bottom-0 bg-pearl border-t border-midnight/15">
             <div className="max-w-[1200px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between gap-3">
               <button
                 type="button"

@@ -90,7 +90,7 @@ export function ModuleDeepDive({ module: m, onClose }: DeepDiveProps) {
 
       <article className="relative w-full max-w-4xl bg-pearl my-6 md:my-10 mx-4 rounded-sm shadow-2xl shadow-midnight/30 animate-riseIn">
         {/* Sticky header */}
-        <header className="sticky top-0 z-10 bg-pearl/95 backdrop-blur-sm border-b border-midnight/15">
+        <header className="sticky top-0 z-10 bg-pearl border-b border-midnight/15">
           <div className="flex items-start justify-between gap-4 px-6 md:px-10 py-5">
             <div className="flex items-center gap-3 flex-wrap min-w-0">
               <span className={cn(
