@@ -5,14 +5,20 @@
   "type": "module",
   "description": "Pontis Atelier — Where Pontis takes shape. Built by FSC for ĒSO Architecture + Design.",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "concurrently -k -n vite,api -c blue,green \"vite\" \"tsx watch server/index.ts\"",
+    "dev:web": "vite",
+    "dev:api": "tsx watch server/index.ts",
+    "build": "vite build",
+    "start": "NODE_ENV=production tsx server/index.ts",
     "preview": "vite preview --port 4173",
     "parse": "node scripts/parse-tchart.cjs",
     "lint": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
+    "better-sqlite3": "^12.10.0",
     "clsx": "^2.1.1",
+    "express": "^5.2.1",
     "lucide-react": "^0.474.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -20,13 +26,17 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
     "@types/node": "^25.7.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.21.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "xlsx": "^0.18.5"

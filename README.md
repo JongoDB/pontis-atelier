@@ -53,31 +53,125 @@ Built by Fighting Smart Cyber for ĒSO under COA 3 of the May 12, 2026 readout.
 
 ## Stack
 
-- Vite + React + TypeScript
+**Frontend** (Vite, single-page app)
+- React + TypeScript
 - Tailwind v3 (ĒSO palette + Mabry Pro fallback via Inter)
 - Zustand for state, with localStorage persistence
 - lucide-react for icons
-- xlsx for the one-time parser script
+
+**Backend** (Node, single Express server)
+- `@anthropic-ai/sdk` for the Claude-backed "Hey Pontis" planner
+- `better-sqlite3` for snapshot storage — embedded, zero external deps
+- `tsx` for TypeScript-direct execution (no build step for the server)
+
+**One-shot data**
+- `xlsx` for the one-time T-chart parser script (Node, .cjs)
 
 ## Setup
 
 ```bash
-# Install (Node 20+ recommended)
+# 1. Install (Node 20+ recommended)
 npm install
 
-# (Optional) Re-parse the T-chart workbook if a fresh version drops
-# Source workbook lives at _src/tchart.xlsx
-npm run parse
+# 2. Configure env vars
+cp .env.example .env
+# Then edit .env:
+#   ADMIN_SECRET=<long random string>
+#   CLAUDE_CODE_OAUTH_TOKEN=<from `claude setup-token`>
 
-# Dev server (http://localhost:5173)
-npm run dev
-
-# Production build
+# 3. Build the frontend
 npm run build
 
-# Preview the production build locally
-npm run preview
+# 4. Start the server (serves the frontend AND the /api/* routes)
+npm start
+# → http://localhost:3000
+# → http://localhost:3000/admin   (FSC admin view, password-gated)
+
+# (Optional) Re-parse the T-chart workbook if a fresh version drops
+npm run parse
+
+# Development: runs vite + express in parallel, with /api proxy
+npm run dev
+# → http://localhost:5173   (frontend, with HMR)
+# → http://localhost:3000   (backend, watches server/ for changes)
 ```
+
+## Architecture
+
+```
+       ┌──────────────────────────────────────────────────┐
+       │  Express server (server/index.ts)                │
+       │  ──────────────────────────────────────────────  │
+       │  GET  /              → SPA (Vite-built dist/)    │
+       │  GET  /admin         → SPA (password-gated)      │
+       │  POST /api/finalize  → SQLite snapshots          │
+       │  POST /api/plan      → Claude (OAuth setup-token)│
+       │  GET  /api/admin/snapshots[/:id]                 │
+       │  GET  /api/health                                │
+       └─┬─────────────────┬──────────────────────────┬─┘
+         │                 │                          │
+   data/atelier.db   Claude API                  Maggie's plan
+   (snapshots,       (Hey Pontis)                (localStorage,
+    embedded                                      survives close)
+    SQLite)
+```
+
+**The frontend is the same React SPA whether you're Maggie or FSC.** The `/admin`
+path renders a password-gated table view that talks to `/api/admin/snapshots`
+to show every finalized plan in chronological order, with full detail on click.
+
+**The Claude planner uses your subscription, not paid API credits.** Generate an
+OAuth token with `claude setup-token` (the Claude Code CLI command), put it in
+`.env` as `CLAUDE_CODE_OAUTH_TOKEN`, and `/api/plan` routes calls through your
+Claude Max quota. If the token isn't set, "Hey Pontis" silently falls back to
+the rule-based planner — Atelier stays usable offline.
+
+## Deploy (LXC, VPS, or any host with Node 20+)
+
+```bash
+# On the host:
+git clone https://github.com/JongoDB/pontis-atelier.git
+cd pontis-atelier
+npm install
+npm run build
+
+# Configure env:
+cp .env.example .env
+$EDITOR .env
+# Minimum to set:
+#   PORT=3000
+#   ADMIN_SECRET=<openssl rand -hex 24>
+#   CLAUDE_CODE_OAUTH_TOKEN=<claude setup-token output>
+
+# Run it as a systemd service (or in screen/tmux for a quick start)
+npm start
+```
+
+The server defaults to `0.0.0.0:3000` and writes its SQLite db to `./data/atelier.db`.
+Front it with nginx or Caddy if you want HTTPS + a real hostname; it's a plain
+HTTP service otherwise.
+
+**Systemd service template** (drop in `/etc/systemd/system/pontis-atelier.service`):
+
+```ini
+[Unit]
+Description=Pontis Atelier
+After=network.target
+
+[Service]
+Type=simple
+User=atelier
+WorkingDirectory=/opt/pontis-atelier
+EnvironmentFile=/opt/pontis-atelier/.env
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then: `sudo systemctl enable --now pontis-atelier`.
 
 ## Notifications when Maggie finalizes
 
@@ -85,60 +179,61 @@ The Finalize flow ends with two paths to tell FSC:
 
 1. **Email button** (always available, requires Maggie to hit send).
    Renders a `mailto:` link with the full plan summary prefilled in the body.
-   Recipient defaults to `fightingsmartcyber@gmail.com`. Override with the
+   Recipient defaults to `team@fightingsmartycber.com`. Override with the
    `VITE_FINALIZE_NOTIFY_EMAIL` env var.
 
-2. **Silent webhook** (optional, fires automatically on every finalize).
-   Set `VITE_FINALIZE_WEBHOOK_URL` to any URL that accepts a JSON POST. Works with:
-   - Formspree / Web3Forms (free, sends email)
-   - Zapier or Make catch-hooks (free tier, route anywhere)
-   - Slack incoming webhooks
-   - Discord webhooks
-   - A 5-line Vercel function that forwards to Resend / SendGrid
-   - Any HTTPS endpoint with permissive CORS
+2. **Atelier backend** (`/api/finalize`, default).
+   The same finalize click also POSTs the snapshot to the server, which writes
+   it to SQLite. FSC sees every finalized plan in `/admin` immediately. This is
+   the primary "view what Maggie finalized" path now.
 
-   The payload is `{ kind: 'pontis-atelier:finalize', version, at, finalizedBy, note, totals, selected, deferrals, priorities, shareURL }`.
+3. **Optional 3rd-party webhook** (fans-out to Slack/Discord/Zapier/etc.).
+   Set `VITE_FINALIZE_WEBHOOK_URL` to any URL that accepts a JSON POST. Useful
+   if you also want Slack pings or to pipe to an automation platform. Payload:
+   `{ kind: 'pontis-atelier:finalize', version, id, at, finalizedBy, note, totals, selected, deferrals, priorities, shareURL }`.
 
-Quickstart with Formspree (zero code):
-
-```bash
-# Get a form URL from formspree.io, then:
-echo 'VITE_FINALIZE_WEBHOOK_URL=https://formspree.io/f/YOUR-ID' > .env
-npm run dev
-# Or for production:
-echo 'VITE_FINALIZE_WEBHOOK_URL=https://formspree.io/f/YOUR-ID' > .env.production
-npm run build
-```
-
-The Done step surfaces the webhook delivery status with a small text line —
-"a notification has also been sent to fsc automatically" or "the auto-notification
-couldn't deliver" — so Maggie knows whether to also use the email button.
+The Done step surfaces both delivery statuses — "your plan is now visible to FSC
+in their admin view" + (optionally) "webhook delivered" — so Maggie knows what
+landed where.
 
 ## Project layout
 
 ```
 pontis-atelier/
-├── _src/                          # Private build inputs (Excel + brand guide)
-│   ├── tchart.xlsx
-│   ├── matrix.xlsx
-│   └── brand_guide.pdf
+├── _src/                          # Private build inputs (gitignored; see _src/README.md)
 ├── scripts/
 │   └── parse-tchart.cjs           # Excel → JSON (re-runnable)
-├── src/
+├── server/                        # Express backend
+│   ├── index.ts                   # Entry: serves /api/* + the SPA
+│   ├── lib/
+│   │   ├── db.ts                  # SQLite setup + schema
+│   │   ├── auth.ts                # admin-secret check
+│   │   └── planner-prompt.ts      # Claude system prompt + tool schema
+│   └── routes/
+│       ├── finalize.ts            # POST /api/finalize
+│       ├── admin.ts               # GET  /api/admin/snapshots[/:id]
+│       ├── plan.ts                # POST /api/plan (Claude-backed)
+│       └── health.ts              # GET  /api/health
+├── src/                           # React frontend
 │   ├── data/
 │   │   ├── data.ts                # Typed accessors
-│   │   └── modules.json           # Generated by parse script
+│   │   └── modules.json           # Generated by parser
 │   ├── components/                # React UI
 │   ├── lib/
 │   │   ├── cost.ts                # Cost / ROI math
 │   │   ├── schedule.ts            # Gantt scheduling + dependencies
 │   │   ├── dependencies.ts        # Dep graph helpers
-│   │   ├── planner.ts             # "Hey Pontis" rule-based logic
+│   │   ├── planner.ts             # Local rule-based planner (fallback)
+│   │   ├── planner-client.ts      # POSTs to /api/plan, falls back to rules
+│   │   ├── notify.ts              # Backend POST + mailto + webhook
+│   │   ├── share.ts               # URL-hash encoded plan sharing
+│   │   ├── storage.ts             # localStorage adapter
 │   │   └── export.ts              # CSV + PDF (browser print)
 │   ├── store.ts                   # Zustand store + persistence
 │   ├── types.ts
 │   ├── App.tsx
 │   └── main.tsx
+├── data/                          # SQLite db (gitignored)
 └── public/favicon.svg
 ```
 
@@ -182,9 +277,15 @@ The natural-language planner (`src/lib/planner.ts`) parses prompts like:
 5. **Expands all prerequisites** so nothing's hanging when Maggie hits "add"
 6. Returns a one-paragraph rationale in ĒSO voice
 
-**Upgrade path:** if a `VITE_ANTHROPIC_API_KEY` is set, we can route the
-parsing through Claude for better fuzzy intent detection. The rule-based path
-stays as the fallback so the app works without credentials in dev.
+**How the backend planner works:** the client POSTs the prompt to `/api/plan`.
+The Express server prepends a frozen system prompt (`server/lib/planner-prompt.ts`)
+containing the entire module catalog (~30KB), defines a single `submit_plan`
+tool, calls Claude (`tool_choice: {type: 'tool', name: 'submit_plan'}`), and
+returns the tool-call arguments verbatim as the structured plan. Prompt caching
+on the catalog means every request after the first reads from cache at ~0.1×.
+
+If `/api/plan` returns 404 (no server) or 503 (no token), the client silently
+falls back to `src/lib/planner.ts` — the rule-based planner Atelier shipped with.
 
 ## ĒSO Brand fidelity
 
@@ -230,7 +331,10 @@ emits them; the UI doesn't care what firm they come from.
   font in via `public/fonts/` to upgrade.
 - **PDF export uses the browser's native print** — keeps the bundle tiny. If
   you want a programmatic PDF for emailing, swap in `pdfmake` or `@react-pdf/renderer`.
-- **No backend** — selections persist in localStorage. `src/lib/storage.ts` has
+- **Maggie's draft state stays in localStorage** — only the *finalized* snapshot
+  is sent to the backend. If Maggie wants Carli to edit her draft, she sends the
+  share-URL (encoded in `#plan=...`). Multi-user concurrent editing of a single
+  draft is intentionally not supported in v1. `src/lib/storage.ts` has
   the adapter interface and a stub `pontisBackendAdapter()` factory; swapping
   is one line in `src/store.ts`.
 - **The dependency map is inferred + hard-coded** — see `parse-tchart.cjs`. If

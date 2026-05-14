@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X, ArrowRight, Sparkles, Check, ChevronRight } from 'lucide-react';
+import { X, ArrowRight, Sparkles, Check, ChevronRight, Cpu } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { ALL_MODULES, MODULE_BY_ID } from '../data/data';
 import { useStore } from '../store';
 import { buildDependencyIndex } from '../lib/dependencies';
-import { plan, type PlannerResult } from '../lib/planner';
+import { runPlanner, type PlannerResult } from '../lib/planner-client';
 import { compactCurrency, compactNumber } from '../lib/format';
 import { track } from '../lib/telemetry';
 
@@ -24,6 +24,7 @@ const STARTERS = [
 export function HeyPontis({ open, onClose }: HeyPontisProps) {
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState<PlannerResult | null>(null);
+  const [busy, setBusy] = useState(false);
   const setLastPlannerPrompt = useStore((s) => s.setLastPlannerPrompt);
   const lastPrompt = useStore((s) => s.lastPlannerPrompt);
   const selectMany = useStore((s) => s.selectMany);
@@ -37,7 +38,10 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
       setTimeout(() => inputRef.current?.focus(), 80);
       setPrompt(lastPrompt);
     }
-    if (!open) setResult(null);
+    if (!open) {
+      setResult(null);
+      setBusy(false);
+    }
   }, [open, lastPrompt]);
 
   useEffect(() => {
@@ -47,12 +51,17 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const submit = (text: string) => {
-    if (!text.trim()) return;
+  const submit = async (text: string) => {
+    if (!text.trim() || busy) return;
+    setBusy(true);
     setLastPlannerPrompt(text);
-    const r = plan({ prompt: text, modules: ALL_MODULES, byId });
-    setResult(r);
-    track('planner-submit', { intents: r.matchedIntents, picks: r.picks.length });
+    try {
+      const r = await runPlanner({ prompt: text, modules: ALL_MODULES, byId });
+      setResult(r);
+      track('planner-submit', { source: r.source, intents: r.matchedIntents, picks: r.picks.length });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const applyPlan = () => {
@@ -60,7 +69,7 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
     const fresh = result.picks.filter((id) => !selectedOrder.includes(id));
     if (fresh.length === 0) return;
     selectMany(fresh, `hey pontis · ${prompt.slice(0, 60)}${prompt.length > 60 ? '…' : ''}`);
-    track('planner-apply', { added: fresh.length });
+    track('planner-apply', { source: result.source, added: fresh.length });
     onClose();
   };
 
@@ -90,19 +99,20 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
           className="px-6 pt-7 pb-5"
         >
           <div className="flex items-center gap-2 pb-3 border-b-2 border-midnight">
-            <Sparkles size={16} className="text-burnt shrink-0" />
+            <Sparkles size={16} className={cn('shrink-0', busy ? 'text-midnight animate-pulse' : 'text-burnt')} />
             <input
               ref={inputRef}
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="build me a plan that…"
-              className="w-full bg-transparent text-lg md:text-xl placeholder-clay/60 focus:outline-none text-midnight font-display tracking-tight"
+              placeholder={busy ? 'pontis is thinking…' : 'build me a plan that…'}
+              disabled={busy}
+              className="w-full bg-transparent text-lg md:text-xl placeholder-clay/60 focus:outline-none text-midnight font-display tracking-tight disabled:opacity-60"
             />
             <button
               type="submit"
               className="p-2 rounded-full bg-midnight text-pearl hover:bg-ink transition-colors disabled:opacity-30"
-              disabled={!prompt.trim()}
+              disabled={!prompt.trim() || busy}
               aria-label="Submit"
             >
               <ArrowRight size={14} />
@@ -125,10 +135,10 @@ export function HeyPontis({ open, onClose }: HeyPontisProps) {
                 ))}
               </div>
               <p className="mt-6 text-xs text-clay leading-relaxed">
-                this is a rule-based planner (open source — see <span className="font-mono">src/lib/planner.ts</span>).
-                it parses pain keywords (closeout, pipeline, voice…), section names, $-caps, and module caps. if you set
-                a <span className="font-mono">VITE_ANTHROPIC_KEY</span> env var, future versions will route through claude
-                for the parsing.
+                pontis sends your request to claude on the backend, with the full 101-module catalog as context.
+                claude reads your intent, picks a slice, and writes back a plan in ĒSO's voice.
+                <span className="text-burnt"> if the backend is unreachable, a built-in rule-based planner takes over
+                so you can keep working.</span>
               </p>
             </div>
           )}

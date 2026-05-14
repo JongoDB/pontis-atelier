@@ -1,15 +1,18 @@
-// Finalize notifications — two paths, neither requires a backend in v1.
+// Finalize notifications — three paths, all best-effort.
 //
-//  1. WEBHOOK (silent, automatic).
-//     Set VITE_FINALIZE_WEBHOOK_URL to any URL that accepts a JSON POST and
-//     atelier fires the snapshot at it on every finalize. Works with Formspree,
-//     Web3Forms, Zapier catch-hooks, Slack incoming webhooks, Discord webhooks,
-//     n8n, or a one-line Vercel function. No backend code lives here.
+//  1. ATELIER BACKEND (default in production).
+//     POSTs the snapshot to /api/finalize on every commit. The Vercel function
+//     stores it in Postgres so FSC's admin view (/admin) can see what Maggie
+//     finalized. Disabled automatically when /api/finalize 404s (e.g. in
+//     `npm run dev` without `vercel dev`).
 //
-//  2. EMAIL (manual, transparent).
-//     Always available. The Done step renders a `mailto:` link with the plan
-//     summary prefilled in the body. Maggie reviews and hits send. Jon's
-//     inbox gets a structured email that's parseable by eye or by automation.
+//  2. WEBHOOK (optional, in addition to the backend).
+//     Set VITE_FINALIZE_WEBHOOK_URL to fan-out the same payload to a third
+//     party — Slack, Formspree, Zapier, Discord, n8n, etc.
+//
+//  3. EMAIL (manual, always available).
+//     The Done step renders a `mailto:` link with the plan summary prefilled.
+//     Maggie reviews and hits send; FSC's inbox gets a parseable email.
 
 import type { PlanSnapshot } from '../types';
 import { MODULE_BY_ID } from '../data/data';
@@ -20,7 +23,10 @@ const WEBHOOK_URL: string | undefined =
 
 const FSC_NOTIFY_EMAIL: string =
   (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_FINALIZE_NOTIFY_EMAIL) ||
-  'fightingsmartcyber@gmail.com';
+  'team@fightingsmartycber.com';
+
+// Same-origin backend endpoint. Always tried; gracefully handles 404s.
+const ATELIER_ENDPOINT = '/api/finalize';
 
 // Compact, parseable plain-text email body that survives every email client.
 export function buildEmailBody(snapshot: PlanSnapshot, shareURL: string): string {
@@ -68,37 +74,74 @@ export function buildMailto(snapshot: PlanSnapshot, shareURL: string): string {
 }
 
 export interface NotifyResult {
+  backendSent: boolean;
+  backendError?: string;
   webhookSent: boolean;
   webhookError?: string;
   webhookConfigured: boolean;
 }
 
-// Best-effort: never throw, always return a result. Telemetry-only failure.
-export async function fireWebhook(snapshot: PlanSnapshot, shareURL: string): Promise<NotifyResult> {
+function buildPayload(snapshot: PlanSnapshot, shareURL: string) {
+  return {
+    kind: 'pontis-atelier:finalize',
+    version: 1,
+    id: snapshot.id,
+    at: snapshot.finalizedAt,
+    finalizedBy: snapshot.finalizedBy,
+    note: snapshot.note,
+    totals: snapshot.totals,
+    selected: snapshot.selectedOrder,
+    deferrals: snapshot.deferrals,
+    priorities: snapshot.priorities,
+    shareURL,
+  };
+}
+
+// Best-effort: never throws. Tries both paths in parallel and reports each.
+export async function fireNotifications(snapshot: PlanSnapshot, shareURL: string): Promise<NotifyResult> {
+  const payload = buildPayload(snapshot, shareURL);
+  const body = JSON.stringify(payload);
+
+  const [backend, webhook] = await Promise.all([
+    fireBackend(body),
+    fireWebhookFanout(body),
+  ]);
+
+  return { ...backend, ...webhook };
+}
+
+async function fireBackend(body: string): Promise<Pick<NotifyResult, 'backendSent' | 'backendError'>> {
+  try {
+    const res = await fetch(ATELIER_ENDPOINT, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+    });
+    if (!res.ok) {
+      // 404 in local Vite dev (no API) — treat as "not configured" silently;
+      // 5xx is a real failure worth surfacing.
+      const isMissing = res.status === 404 || res.status === 405;
+      return {
+        backendSent: false,
+        backendError: isMissing ? undefined : `HTTP ${res.status}`,
+      };
+    }
+    return { backendSent: true };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { backendSent: false, backendError: msg };
+  }
+}
+
+async function fireWebhookFanout(body: string): Promise<Pick<NotifyResult, 'webhookSent' | 'webhookError' | 'webhookConfigured'>> {
   if (!WEBHOOK_URL) {
     return { webhookSent: false, webhookConfigured: false };
   }
   try {
-    const payload = {
-      kind: 'pontis-atelier:finalize',
-      version: 1,
-      at: snapshot.finalizedAt,
-      finalizedBy: snapshot.finalizedBy,
-      note: snapshot.note,
-      totals: snapshot.totals,
-      selected: snapshot.selectedOrder,
-      deferrals: snapshot.deferrals,
-      priorities: snapshot.priorities,
-      shareURL,
-    };
     const res = await fetch(WEBHOOK_URL, {
       method: 'POST',
-      // Many free webhook receivers (Slack incoming, Formspree, n8n catch) accept
-      // either application/json or form-encoded. JSON is most flexible.
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-      // No-cors is too strict for actual delivery confirmation; we rely on the
-      // service responding 2xx if it accepts. Most webhook receivers do CORS *.
+      body,
       mode: 'cors',
     });
     if (!res.ok) {
@@ -110,6 +153,9 @@ export async function fireWebhook(snapshot: PlanSnapshot, shareURL: string): Pro
     return { webhookSent: false, webhookConfigured: true, webhookError: msg };
   }
 }
+
+// Back-compat export (Finalize.tsx still imports `fireWebhook`).
+export const fireWebhook = fireNotifications;
 
 export const notifyEnv = {
   webhookConfigured: !!WEBHOOK_URL,

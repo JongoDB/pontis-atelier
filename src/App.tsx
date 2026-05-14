@@ -9,11 +9,26 @@ import { Splash } from './components/Splash';
 import { useStore } from './store';
 import { CostPanel } from './components/CostPanel';
 import { SharedPlanBanner } from './components/Share';
+import { AdminPage } from './components/Admin';
 import { track } from './lib/telemetry';
 
 type Page = 'browse' | 'plan' | 'gantt' | 'about';
 
 export function App() {
+  // Pathname-based routing for the admin surface. /admin renders a different
+  // top-level component entirely (its own chrome, password gate, snapshot
+  // list). Anything else is the regular Atelier app.
+  const isAdminRoute =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+
+  if (isAdminRoute) {
+    return <AdminPage />;
+  }
+
+  return <AtelierApp />;
+}
+
+function AtelierApp() {
   const hasOpenedBefore = useStore((s) => s.hasOpenedBefore);
   const dismissWelcome = useStore((s) => s.dismissWelcome);
   const selectedOrder = useStore((s) => s.selectedOrder);

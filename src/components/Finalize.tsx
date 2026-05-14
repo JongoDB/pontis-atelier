@@ -747,30 +747,49 @@ function DoneStep({
 
 function NotificationStatus({ notify, to }: { notify: NotifyResult | null; to: string }) {
   if (!notify) {
-    // Still firing
     return (
       <p className="mt-3 text-[11px] text-clay italic">
-        opening this button drafts an email to <span className="font-mono">{to}</span>.
+        publishing your plan to fsc…
       </p>
     );
   }
-  if (notify.webhookSent) {
-    return (
-      <p className="mt-3 text-[11px] text-midnight italic flex items-center justify-center gap-1.5">
-        <Check size={11} /> a notification has also been sent to fsc automatically.
-      </p>
-    );
+
+  const lines: { text: string; tone: 'good' | 'warn' | 'soft' }[] = [];
+
+  if (notify.backendSent) {
+    lines.push({ text: 'your plan is now visible to fsc in their admin view.', tone: 'good' });
+  } else if (notify.backendError) {
+    lines.push({ text: `couldn't reach the atelier backend (${notify.backendError}). please send the email above.`, tone: 'warn' });
+  } else {
+    // Backend not available (e.g. local dev or unconfigured deploy) — be quiet.
   }
-  if (notify.webhookConfigured && !notify.webhookSent) {
-    return (
-      <p className="mt-3 text-[11px] text-burnt italic">
-        the auto-notification couldn't deliver{notify.webhookError ? ` (${notify.webhookError})` : ''}. please send the email above.
-      </p>
-    );
+
+  if (notify.webhookConfigured) {
+    if (notify.webhookSent) {
+      lines.push({ text: 'webhook delivered.', tone: 'good' });
+    } else {
+      lines.push({ text: `webhook delivery failed${notify.webhookError ? ` (${notify.webhookError})` : ''}.`, tone: 'warn' });
+    }
   }
+
+  if (lines.length === 0) {
+    lines.push({ text: `the email button drafts a message to ${to}. review and hit send.`, tone: 'soft' });
+  }
+
   return (
-    <p className="mt-3 text-[11px] text-clay italic">
-      sends to <span className="font-mono">{to}</span>. opens in your email client — review and hit send.
-    </p>
+    <div className="mt-3 space-y-1">
+      {lines.map((l, i) => (
+        <p
+          key={i}
+          className={cn(
+            'text-[11px] italic flex items-center justify-center gap-1.5',
+            l.tone === 'good' ? 'text-midnight' : l.tone === 'warn' ? 'text-burnt' : 'text-clay'
+          )}
+        >
+          {l.tone === 'good' && <Check size={11} />}
+          {l.text}
+        </p>
+      ))}
+    </div>
   );
 }

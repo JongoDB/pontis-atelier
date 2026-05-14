@@ -10,6 +10,12 @@ dist/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+# Runtime data (SQLite + WAL) — local to each host, not committed
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
 # Private source materials — the FSC/ĒSO T-chart workbook + ĒSO Brand Guide PDF
 # live in `_src/` locally but must NOT be committed to a public repo. Drop them
 # in fresh on any machine where you need to re-run the parser. See _src/README.md.
